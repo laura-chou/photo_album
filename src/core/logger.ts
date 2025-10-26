@@ -20,7 +20,8 @@ export const LogMessage = {
     USEREXISTS: "user already exists",
     NOTFOUND: "no data found",
     EXTENSIONLIMIT: "extension limit reached.",
-    CUSTNOTDUE: "customer is not due yet."
+    CUSTNOTDUE: "customer is not due yet.",
+    TOOMANYREQUESTS: "Too many requests."
   }
 } as const;
 

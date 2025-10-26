@@ -2,7 +2,8 @@ const base = "/user";
 
 export const ROUTE = {
   LOGIN: `${base}/login`,
-  CREATE: `${base}/create`
+  CREATE: `${base}/create`,
+  CAPTCHA: `${base}/captcha`
 } as const;
 
 type LoginRequest = {

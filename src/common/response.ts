@@ -60,6 +60,14 @@ export const responseHandler = {
     );
   },
 
+  tooManyRequests(res: Response): void {
+    sendResponse(
+      res,
+      HTTP_STATUS.TOO_MANY_REQUESTS,
+      RESPONSE_MESSAGE.TOO_MANY_REQUESTS
+    );
+  },
+
   unauthorized(res: Response, message: string = LogMessage.ERROR.UNKNOWN): void {
     sendResponse(
       res,

@@ -1,13 +1,15 @@
 import bcrypt from "bcrypt";
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
-
+import svgCaptcha from 'svg-captcha';
+import { v4 as uuidv4 } from 'uuid';
 import { responseHandler } from "../common/response";
 import { getNowDate, setFunctionName } from "../common/utils";
 import { LogLevel, LogMessage, setLog } from "../core/logger";
 import User, { IUser } from "../models/user.model";
 
 import * as baseController from "./base.controller";
+import { setCaptcha } from "../core/captcha";
 
 export const userLogin = setFunctionName(
   async(request: Request, response: Response): Promise<void> => {
@@ -72,4 +74,32 @@ export const userCreate = setFunctionName(
     }
   },
   "userCreate"
+);
+
+export const userCapture = setFunctionName(
+  async(request: Request, response: Response): Promise<void> => {
+    try {
+        const captcha = svgCaptcha.create({
+          size: 4, // Length of the captcha text
+          ignoreChars: 'o01il', // Characters to ignore
+          color: true, // Whether the captcha text has color
+          background: '#fff', // Background color of the captcha image
+          noise: 2 // Number of noise lines
+        });
+
+        const captchaId = uuidv4();
+        setCaptcha(captchaId, captcha.text);
+
+        setLog(LogLevel.INFO, LogMessage.SUCCESS, userCapture.name);
+
+        const responseData = {
+          captchaId,
+          svg: captcha.data
+        };
+        responseHandler.success(response, responseData);
+    } catch (error) {
+      baseController.errorHandler(response, error, userCapture.name);
+    }
+  },
+  "userCapture"
 );

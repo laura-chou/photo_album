@@ -5,10 +5,11 @@ import { responseHandler } from "../common/response";
 import { isNullOrEmpty, isTypeString } from "../common/utils";
 import { LogLevel, setLog } from "../core/logger";
 
-export default function validateLoginRequest(
+const validateLoginRequest = (
   request: Request,
   response: Response,
-  next: NextFunction): void {
+  next: NextFunction
+): void => {
   const contentType: string | undefined = request.headers["content-type"];
   if (contentType !== "application/json") {
     setLog(LogLevel.ERROR, RESPONSE_MESSAGE.INVALID_CONTENT_TYPE, validateLoginRequest.name);
@@ -30,3 +31,5 @@ export default function validateLoginRequest(
 
   next();
 }
+
+export default validateLoginRequest;

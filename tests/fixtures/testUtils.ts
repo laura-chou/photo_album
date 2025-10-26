@@ -48,7 +48,6 @@ export const createRequest = {
     const mergedTokenInfo = { ...defaultTokenInfo, ...tokenInfo };
     const expectContentType = isExpectJson ? CONTENT_TYPE.JSON_WITH_CHARSET : CONTENT_TYPE.TEXT_WITH_CHARSET;
     const req = request(app).get(route);
-
     if (mergedTokenInfo.showToken) {
       const validToken = jwt.sign(
         { user: mergedTokenInfo.existUser ? "testuser" : "notExistUser" },
@@ -218,4 +217,11 @@ export const expectResponse = {
       message: message
     });
   },
+
+  tooManyRequests: (response: Response): void => {
+    expect(response.body).toEqual({
+      status: HTTP_STATUS.TOO_MANY_REQUESTS,
+      message: RESPONSE_MESSAGE.TOO_MANY_REQUESTS
+    });
+  }
 };

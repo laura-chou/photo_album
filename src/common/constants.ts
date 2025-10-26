@@ -7,6 +7,7 @@ export const HTTP_STATUS = {
   FORBIDDEN: 403,
   NOT_FOUND: 404,
   CONFLICT: 409,
+  TOO_MANY_REQUESTS: 429,
   SERVER_ERROR: 500
 } as const;
 
@@ -31,5 +32,6 @@ export const RESPONSE_MESSAGE = {
   USER_NOT_EXIST: "User does not exist.",
   TOKEN_EXPIRED: "Token expired.",
   INVALID_CUSTID: "Invalid Customer ID format.",
-  DATA_ALREADY_EXISTS: "This record already exists."
+  DATA_ALREADY_EXISTS: "This record already exists.",
+  TOO_MANY_REQUESTS: "Too many requests. Please wait a moment."
 } as const;
