@@ -33,5 +33,6 @@ export const RESPONSE_MESSAGE = {
   TOKEN_EXPIRED: "Token expired.",
   INVALID_CUSTID: "Invalid Customer ID format.",
   DATA_ALREADY_EXISTS: "This record already exists.",
-  TOO_MANY_REQUESTS: "Too many requests. Please wait a moment."
+  TOO_MANY_REQUESTS: "Too many requests. Please wait a moment.",
+  INVALID_CAPTCHA: "Captcha is incorrect."
 } as const;

@@ -11,7 +11,7 @@ export const setCaptcha = (
   setTimeout(() => {
     captchaStore.delete(id);
   }, ttlMs);
-}
+};
 
 export const getCaptcha = (
   id: string
@@ -22,4 +22,4 @@ export const getCaptcha = (
     return null;
   }
   return entry.text;
-}
+};

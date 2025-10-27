@@ -1,13 +1,17 @@
+import svgCaptcha from "svg-captcha";
+import { v4 as uuidv4 } from "uuid";
+
 import { HTTP_STATUS } from "../src/common/constants";
+import * as utils from "../src/common/utils";
+import { setCaptcha } from "../src/core/captcha";
 import User from "../src/models/user.model";
-import svgCaptcha from 'svg-captcha';
-import { v4 as uuidv4 } from 'uuid';
+
 import { describeServerErrorTests, describeValidationErrorTests } from "./fixtures/testStructures";
 import { createRequest, expectResponse, mockUserFindOne } from "./fixtures/testUtils";
-import { ROUTE, MOCK_USER_INFO, MOCK_NOTEXIST_USER, MOCK_EXIST_USER } from "./fixtures/userTestConfig";
-import * as utils from '../src/common/utils';
+import { ROUTE, MOCK_USER_INFO, MOCK_REGISTER_EXIST_USER, MOCK_REGISTER_NOTEXIST_USER, MOCK_LOGIN_NOTEXIST_USER, MOCK_LOGIN_EXIST_USER } from "./fixtures/userTestConfig";
 
-jest.mock('uuid', () => ({
+
+jest.mock("uuid", () => ({
   v4: jest.fn(),
 }));
 
@@ -18,51 +22,73 @@ jest.mock("../src/models/user.model", () => ({
   create: jest.fn()
 }));
 
+const spyOnGetClientIp = (ip: string): void => {
+  jest.spyOn(utils, "getClientIp").mockReturnValue(ip);
+};
+
 describe("User API", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
   describe(`GET ${ROUTE.CAPTCHA}`, () => {
-    test('should return captcha svg and id when rate limit is not exceeded', async () => {
-      jest.spyOn(utils, 'getClientIp').mockReturnValue('127.0.0.1');
-      jest.spyOn(svgCaptcha, 'create').mockReturnValue({
-        text: 'abcd',
-        data: '<svg>captcha</svg>',
-      });
-      (uuidv4 as jest.Mock).mockReturnValue('test-id');
+    describe("Success Cases", () => {
+      test("should return captcha svg and id when rate limit is not exceeded", async() => {
+        spyOnGetClientIp("127.0.0.1");
+        jest.spyOn(svgCaptcha, "create").mockReturnValue({
+          text: "abcd",
+          data: "<svg>captcha</svg>",
+        });
+        (uuidv4 as jest.Mock).mockReturnValue("test-id");
 
-      const response = await createRequest.get(
-        ROUTE.CAPTCHA,
-        HTTP_STATUS.OK,
-        {
-          showToken: false
-        }
-      );
+        const response = await createRequest.get(
+          ROUTE.CAPTCHA,
+          HTTP_STATUS.OK,
+          {
+            showToken: false
+          }
+        );
 
-      expectResponse.success(response, {
-        captchaId: 'test-id',
-        svg: '<svg>captcha</svg>'
+        expectResponse.success(response, {
+          captchaId: "test-id",
+          svg: "<svg>captcha</svg>"
+        });
       });
     });
 
-    test('should return too many requests when rate limit is exceeded', async () => {
-      jest.spyOn(utils, 'getClientIp').mockReturnValue('127.0.0.1');
-      jest.mock('../src/middleware/validateRateLimit', () => ({
-        __esModule: true,
-        default: jest.fn((req, res, next) => {
-          res.status(429).json({ message: 'Too many requests (mocked)' });
-        }),
-      }));
-      const response = await createRequest.get(
-        ROUTE.CAPTCHA,
-        HTTP_STATUS.TOO_MANY_REQUESTS,
-        {
-          showToken: false
-        }
-      );
+    describe("Validation Error Cases", () => {
+      test("should return too many requests when rate limit is exceeded", async() => {
+        spyOnGetClientIp("127.0.0.1");
 
-      expectResponse.tooManyRequests(response);
+        const response = await createRequest.get(
+          ROUTE.CAPTCHA,
+          HTTP_STATUS.TOO_MANY_REQUESTS,
+          {
+            showToken: false
+          }
+        );
+
+        expectResponse.tooManyRequests(response);
+      });
+    });
+
+    describe("Server Error Cases", () => {
+      test("should return 500 if svgCaptcha.create throws error", async() => {
+        spyOnGetClientIp("127.0.0.2");
+        jest.spyOn(svgCaptcha, "create").mockImplementation(() => {
+          throw new Error("Captcha generation failed");
+        });
+
+        const response = await createRequest.get(
+          ROUTE.CAPTCHA,
+          HTTP_STATUS.SERVER_ERROR,
+          {
+            showToken: false
+          }
+        );
+
+        expectResponse.error(response);
+      });
     });
   });
 
@@ -70,7 +96,7 @@ describe("User API", () => {
     describeValidationErrorTests(
       {
         route: ROUTE.LOGIN,
-        validBody: MOCK_EXIST_USER,
+        validBody: MOCK_LOGIN_EXIST_USER,
         requestFn: createRequest.post
       },
       expectResponse
@@ -82,7 +108,7 @@ describe("User API", () => {
         
         const response = await createRequest.post(
           ROUTE.LOGIN,
-          MOCK_NOTEXIST_USER,
+          MOCK_LOGIN_NOTEXIST_USER,
           HTTP_STATUS.UNAUTHORIZED
         );
     
@@ -94,7 +120,7 @@ describe("User API", () => {
 
         const response = await createRequest.post(
           ROUTE.LOGIN,
-          MOCK_NOTEXIST_USER,
+          MOCK_LOGIN_NOTEXIST_USER,
           HTTP_STATUS.UNAUTHORIZED
         );
 
@@ -108,7 +134,7 @@ describe("User API", () => {
 
         const response = await createRequest.post(
           ROUTE.LOGIN,
-          MOCK_EXIST_USER,
+          MOCK_LOGIN_EXIST_USER,
           HTTP_STATUS.OK
         );
         expect(response.statusCode).toBe(200);
@@ -120,7 +146,7 @@ describe("User API", () => {
       {
         route: ROUTE.LOGIN,
         requestFn: createRequest.post,
-        requestBody: MOCK_EXIST_USER,
+        requestBody: MOCK_LOGIN_EXIST_USER,
         dbErrorCases: [
           {
             name: "User.findOne",
@@ -136,7 +162,7 @@ describe("User API", () => {
     describeValidationErrorTests(
       {
         route: ROUTE.CREATE,
-        validBody: MOCK_EXIST_USER,
+        validBody: MOCK_REGISTER_EXIST_USER,
         requestFn: createRequest.post
       },
       expectResponse
@@ -144,11 +170,12 @@ describe("User API", () => {
 
     describe("Success Cases", () => {
       test("should create user successfully", async() => {
+        setCaptcha(MOCK_REGISTER_NOTEXIST_USER.captchaId, MOCK_REGISTER_NOTEXIST_USER.captchaText);
         mockUserFindOne(null);
 
         const response = await createRequest.post(
           ROUTE.CREATE,
-          MOCK_NOTEXIST_USER,
+          MOCK_REGISTER_NOTEXIST_USER,
           HTTP_STATUS.CREATED
         );
 
@@ -156,16 +183,31 @@ describe("User API", () => {
       });
     });
 
+    describe("Validation Captcha Error Cases", () => {
+      test("should bad request for invalid captcha", async() => {
+        setCaptcha(MOCK_REGISTER_NOTEXIST_USER.captchaId, "captcha");
+
+        const response = await createRequest.post(
+          ROUTE.CREATE,
+          MOCK_REGISTER_NOTEXIST_USER,
+          HTTP_STATUS.BAD_REQUEST
+        );
+
+        expectResponse.badRequest(response, "Captcha is incorrect.");
+      });
+    });
+
     describeServerErrorTests(
       {
         route: ROUTE.CREATE,
         requestFn: createRequest.post,
-        requestBody: MOCK_EXIST_USER,
+        requestBody: MOCK_REGISTER_EXIST_USER,
         dbErrorCases: [
           {
             name: "User.findOne",
             mockFn: User.findOne as jest.Mock,
             setupMocks: (): void => {
+              setCaptcha(MOCK_REGISTER_NOTEXIST_USER.captchaId, MOCK_REGISTER_NOTEXIST_USER.captchaText);
               mockUserFindOne();
             }
           },

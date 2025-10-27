@@ -1,9 +1,9 @@
-import type { Config } from 'jest';
+import type { Config } from "jest";
 
 const config: Config = {
-  testEnvironment: 'node',
+  testEnvironment: "node",
   transform: {
-    '^.+\\.tsx?$': ['ts-jest', {}],
+    "^.+\\.tsx?$": ["ts-jest", {}],
   }
 };
 

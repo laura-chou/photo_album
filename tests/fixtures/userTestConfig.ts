@@ -11,6 +11,13 @@ type LoginRequest = {
   password: string;
 }
 
+type RegisterRequest = {
+  account: string;
+  password: string;
+  captchaId: string;
+  captchaText: string;
+}
+
 interface UserAuthInfo {
   userName: string;
   password: string;
@@ -23,13 +30,27 @@ export const MOCK_USER_INFO: UserAuthInfo = {
   token: "token"
 };
 
-export const MOCK_EXIST_USER: LoginRequest = {
+export const MOCK_LOGIN_EXIST_USER: LoginRequest = {
   account: MOCK_USER_INFO.userName,
   password: "userpassword"
 };
 
-export const MOCK_NOTEXIST_USER: LoginRequest = { 
+export const MOCK_LOGIN_NOTEXIST_USER: LoginRequest = { 
   account: "not exist user",
   password: "not exist"
+};
+
+export const MOCK_REGISTER_EXIST_USER: RegisterRequest = {
+  account: "newuser",
+  password: "newpassword",
+  captchaId: "captcha123",
+  captchaText: "abcd"
+};
+
+export const MOCK_REGISTER_NOTEXIST_USER: RegisterRequest = {
+  account:  MOCK_USER_INFO.userName,
+  password: "password",
+  captchaId: "captcha123",
+  captchaText: "abcd"
 };
 

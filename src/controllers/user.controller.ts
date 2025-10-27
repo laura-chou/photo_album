@@ -1,15 +1,16 @@
 import bcrypt from "bcrypt";
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
-import svgCaptcha from 'svg-captcha';
-import { v4 as uuidv4 } from 'uuid';
+import svgCaptcha from "svg-captcha";
+import { v4 as uuidv4 } from "uuid";
+
 import { responseHandler } from "../common/response";
 import { getNowDate, setFunctionName } from "../common/utils";
+import { setCaptcha } from "../core/captcha";
 import { LogLevel, LogMessage, setLog } from "../core/logger";
 import User, { IUser } from "../models/user.model";
 
 import * as baseController from "./base.controller";
-import { setCaptcha } from "../core/captcha";
 
 export const userLogin = setFunctionName(
   async(request: Request, response: Response): Promise<void> => {
@@ -38,18 +39,6 @@ export const userLogin = setFunctionName(
 
 export const userCreate = setFunctionName(
   async(request: Request, response: Response): Promise<void> => {
-    if (!baseController.validateContentType(request, response, userCreate.name)){
-      return;
-    }
-
-    const fields = [
-      { key: "account", type: "string" },
-      { key: "password", type: "string" }
-    ];
-    if (!baseController.validateBodyFields(request, response, userCreate.name, fields)) {
-      return;
-    }
-
     try {
       const userName = request.body.account;
       const password = request.body.password;
@@ -77,13 +66,13 @@ export const userCreate = setFunctionName(
 );
 
 export const userCapture = setFunctionName(
-  async(request: Request, response: Response): Promise<void> => {
+  async(_: Request, response: Response): Promise<void> => {
     try {
         const captcha = svgCaptcha.create({
           size: 4, // Length of the captcha text
-          ignoreChars: 'o01il', // Characters to ignore
+          ignoreChars: "o01il", // Characters to ignore
           color: true, // Whether the captcha text has color
-          background: '#fff', // Background color of the captcha image
+          background: "#fff", // Background color of the captcha image
           noise: 2 // Number of noise lines
         });
 

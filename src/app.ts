@@ -28,7 +28,7 @@ app.use(morgan(":apiPath", {
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.set('trust proxy', true)
+app.set("trust proxy", true);
 
 publicRoutes.forEach(route => {
   app.use(route.prefix, route.router);

@@ -1,19 +1,21 @@
 import js from "@eslint/js";
+import importPlugin from "eslint-plugin-import";
 import globals from "globals";
 import tseslint from "typescript-eslint";
-import { defineConfig } from "eslint/config";
 
-export default defineConfig([
-  { 
+export default [
+  {
+    ...js.configs.recommended,
     files: ["**/*.{js,mjs,cjs,ts,mts,cts}"],
-    plugins: { js },
-    extends: ["js/recommended"],
-    languageOptions: { 
-      globals: globals.node 
+    languageOptions: {
+      globals: globals.node,
+    },
+    plugins: {
+      import: importPlugin,
     }
   },
+  ...tseslint.configs.recommended,
   {
-    ...tseslint.configs.recommended,
     rules: {
       "@typescript-eslint/explicit-function-return-type": "warn",
       "@typescript-eslint/no-explicit-any": "warn",
@@ -40,6 +42,6 @@ export default defineConfig([
       "block-spacing": ["error", "always"],
       "comma-spacing": ["error", { before: false, after: true }],
       "object-curly-spacing": ["error", "always"],
-    }
-  }
-]);
+    },
+  },
+];
