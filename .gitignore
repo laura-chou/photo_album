@@ -6,3 +6,5 @@ coverage/
 .env
 
 logs/
+
+images/

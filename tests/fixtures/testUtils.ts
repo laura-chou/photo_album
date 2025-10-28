@@ -188,11 +188,15 @@ export const expectResponse = {
     });
   },
 
-  notFound: (response: Response): void => {
-    expect(response.body).toEqual({
-      status: HTTP_STATUS.NOT_FOUND,
-      message: RESPONSE_MESSAGE.NOT_FOUND,
-    });
+  notFound: (response: Response, data: string | object): void => {
+    if (isTypeString(data)) {
+      expect(response.text).toBe(data);
+    } else {
+      expect(response.body).toEqual({
+        status: HTTP_STATUS.NOT_FOUND,
+        message: RESPONSE_MESSAGE.NOT_FOUND,
+      });
+    }
   },
 
   error: (response: Response): void => {
