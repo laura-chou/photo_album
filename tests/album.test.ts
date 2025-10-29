@@ -4,9 +4,10 @@ import path from "path";
 import express, { Response } from "express";
 
 import { HTTP_STATUS, RESPONSE_MESSAGE } from "../src/common/constants";
+import User from "../src/models/user.model";
 
-import { ROUTE } from "./fixtures/albumTestConfig";
-import { describeAuthErrorTests } from "./fixtures/testStructures";
+import { MOCK_ALBUM, ROUTE } from "./fixtures/albumTestConfig";
+import { describeAuthErrorTests, describeServerErrorTests } from "./fixtures/testStructures";
 import { createRequest, expectResponse, mockUserFindOne } from "./fixtures/testUtils";
 
 jest.mock("fs/promises");
@@ -19,8 +20,14 @@ jest.spyOn(express.response, "sendFile").mockImplementation(function(this: Respo
 
 jest.mock("../src/models/user.model", () => ({
   findOne: jest.fn(),
-  updateOne: jest.fn()
+  updateOne: jest.fn(),
+  aggregate: jest.fn()
 }));
+
+const mockUserAggregate = (data: Array<object>): void => {
+  (User.aggregate as jest.Mock).mockResolvedValue(data);
+};
+
 
 describe("Album API", () => {
   beforeEach(() => {
@@ -82,5 +89,55 @@ describe("Album API", () => {
         expectResponse.notFound(response, RESPONSE_MESSAGE.NOT_FOUND);
       });
     });
+  });
+
+  describe(`GET ${ROUTE.ALBUM}/:user`, () => {
+    const route = `${ROUTE.ALBUM}/userName`;
+
+    describeAuthErrorTests(
+      route,
+      (route, status, tokenInfo) => createRequest.get(route, status, tokenInfo),
+      expectResponse
+    );
+
+    describe("Success Cases", () => {
+      
+      test("should return user album data with valid JWT", async() => {
+        mockUserFindOne();
+        mockUserAggregate(MOCK_ALBUM);
+
+        const response = await createRequest.get(route, HTTP_STATUS.OK);
+        expectResponse.success(response, MOCK_ALBUM);
+      });
+
+      test("should return empty data when no data found", async() => {
+        mockUserFindOne();
+        mockUserAggregate([]);
+
+        const response = await createRequest.get(route, HTTP_STATUS.OK);
+        expectResponse.success(response, []);
+      });
+    });
+
+    describeServerErrorTests(
+      {
+        route: route,
+        requestFn: createRequest.get,
+        dbErrorCases: [
+          {
+            name: "User.findOne",
+            mockFn: User.findOne as jest.Mock
+          },
+          {
+            name: "User.aggregate",
+            mockFn: User.aggregate as jest.Mock,
+            setupMocks: (): void => {
+              mockUserFindOne();
+            }
+          }
+        ]
+      },
+      expectResponse
+    );
   });
 });
