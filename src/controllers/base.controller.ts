@@ -29,6 +29,8 @@ const validateFieldType = (value: unknown, type: string): boolean => {
       return isTypeBoolean(value);
     case "date":
       return typeof value === "string" && isTypeDate(value);
+    case "array":
+      return Array.isArray(value);
     default:
       return false;
   }
@@ -56,12 +58,12 @@ export const validateBodyFields = (
   return true;
 };
 
-export const validateCustId = (custId: string, response: Response, functionName: string): boolean => {
+export const validateId = (custId: string, response: Response, functionName: string): boolean => {
   if (Types.ObjectId.isValid(custId)) {
     return true;
   } else {
-    setLog(LogLevel.ERROR, RESPONSE_MESSAGE.INVALID_CUSTID, functionName);
-    responseHandler.badRequest(response, "CUST_ID");
+    setLog(LogLevel.ERROR, RESPONSE_MESSAGE.INVALID_ID, functionName);
+    responseHandler.badRequest(response, "INVALID_ID");
     return false;
   }
 };

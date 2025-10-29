@@ -5,7 +5,8 @@ import { createRoute, RouteConfig } from "./route.utils";
 
 export const albumRoutes = (): RouteConfig => {
   return createRoute("/album", (router) => {
-    router.get("/:user", authMiddleware("jwt-basic"), albumController.getAlbum);
-    router.get("/file/:name", authMiddleware("jwt-basic"), albumController.readPhoto);
+    router.get("/:userName", authMiddleware("jwt-basic"), albumController.getAlbum);
+    router.get("/file/:fileName", authMiddleware("jwt-basic"), albumController.readPhoto);
+    router.patch("/:folderId", authMiddleware("jwt-basic"), albumController.updateAlbum);
   });
 };

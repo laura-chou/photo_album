@@ -59,7 +59,7 @@ const validateRegisterRequest = (
 
   if (!verifyCaptcha(captchaId, captchaText)) {
     setLog(LogLevel.ERROR, RESPONSE_MESSAGE.INVALID_CAPTCHA, functionName);
-    responseHandler.badRequest(response, "CAPTCHA_INVALID");
+    responseHandler.badRequest(response, "INVALID_CAPTCHA");
     return;
   }
 

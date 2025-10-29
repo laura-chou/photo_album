@@ -32,7 +32,7 @@ export const RESPONSE_MESSAGE = {
   FORBIDDEN_CORS: "Forbidden: CORS policy does not allow access from this origin.",
   USER_NOT_EXIST: "User does not exist.",
   TOKEN_EXPIRED: "Token expired.",
-  INVALID_CUSTID: "Invalid Customer ID format.",
+  INVALID_ID: "Invalid ID format.",
   DATA_ALREADY_EXISTS: "This record already exists.",
   TOO_MANY_REQUESTS: "Too many requests. Please wait a moment.",
   INVALID_CAPTCHA: "Captcha is incorrect."

@@ -84,7 +84,7 @@ const generateInvalidTypeBody = <T extends Record<string, unknown>>(validBody: T
   }, {} as { [K in keyof T]: unknown });
 };
 
-export const describeValidationCustIdTest = (
+export const describeValidationParamsIdTest = (
   route: string,
   requestFn: (
     route: string,
@@ -93,8 +93,8 @@ export const describeValidationCustIdTest = (
   ) => Promise<request.Response>,
   expectResponseFn: typeof expectResponse
 ): void => {
-  describe("Validation CustId Parameter", () => {
-    test("should return 400 if custId format is invalid", async() => {
+  describe("Validation Id Parameter", () => {
+    test("should return 400 if Id format is invalid", async() => {
       mockUserFindOne();
       
       const response = await requestFn(
@@ -102,7 +102,7 @@ export const describeValidationCustIdTest = (
         HTTP_STATUS.BAD_REQUEST,
         {}
       );
-      expectResponseFn.badRequest(response, RESPONSE_MESSAGE.INVALID_CUSTID);
+      expectResponseFn.badRequest(response, RESPONSE_MESSAGE.INVALID_ID);
     });
   });
 };

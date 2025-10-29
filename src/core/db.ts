@@ -41,8 +41,6 @@ export const getUserAlbumPipeline = (userName: string): PipelineStage[] => [
   { $unwind: "$albums" },
   {
     $project: {
-      _id: 0,
-      id: "$albums._id",
       folder: "$albums.folder"
     }
   }
