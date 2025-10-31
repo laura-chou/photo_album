@@ -21,7 +21,8 @@ export const LogMessage = {
     NOTFOUND: "no data found",
     EXTENSIONLIMIT: "extension limit reached.",
     CUSTNOTDUE: "customer is not due yet.",
-    TOOMANYREQUESTS: "Too many requests."
+    TOOMANYREQUESTS: "Too many requests.",
+    FTPFAIL: "FTP upload failed."
   }
 } as const;
 

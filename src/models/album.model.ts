@@ -5,9 +5,15 @@ import { Model, model, Schema, Types } from "mongoose";
 import { RESPONSE_MESSAGE } from "../common/constants";
 import { isNullOrEmpty } from "../common/utils";
 
+
+interface Files {
+  customName: string;
+  storeName: string;
+}
+
 interface Folder {
   name: string;
-  files: string[];
+  files: Files[];
 }
 
 interface IAlbum {
@@ -15,13 +21,24 @@ interface IAlbum {
   folder: Folder[];
 }
 
+const filesSchema = new Schema<Files>({
+  customName: { 
+    type: String,
+    required: true
+  },
+  storeName: { 
+    type: String,
+    required: true
+  }
+});
+
 const folderSchema = new Schema<Folder>({
   name: {
     type: String,
     required: true
   },
   files: {
-    type: [String],
+    type: [filesSchema],
     default: []
   }
 });

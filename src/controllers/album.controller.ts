@@ -14,6 +14,12 @@ import User from "../models/user.model";
 
 import * as baseController from "./base.controller";
 
+export enum FolderAction {
+  Rename = "rename",
+  Delete = "delete",
+  Create = "create"
+}
+
 export const readPhoto = setFunctionName(
   async(request: Request, response: Response): Promise<void> => {
     const fileName = request.params.fileName;
@@ -58,46 +64,83 @@ export const getAlbum = setFunctionName(
   "getAlbum"
 );
 
-export const updateAlbum = setFunctionName(
+export const updateFolder = setFunctionName(
   async(request: Request, response: Response): Promise<void> => {
-    const folderId = request.params.folderId;
-
-    if (!baseController.validateId(folderId, response, updateAlbum.name)) {
-      return;
-    }
-
-    if (!baseController.validateContentType(request, response, updateAlbum.name)) {
+    if (!baseController.validateContentType(request, response, updateFolder.name)) {
       return;
     }
 
     const fields = [
-      { key: "name", type: "string" },
-      { key: "files", type: "array" }
+      { key: "action", type: "string" }
     ];
-    if (!baseController.validateBodyFields(request, response, updateAlbum.name, fields)) {
+    const { action, folderName, userName } = request.body;
+    if (action === FolderAction.Create) {
+      fields.push({ key: "userName", type: "string" });
+    }
+    if (action !== FolderAction.Delete) {
+      fields.push({ key: "folderName", type: "string" });
+    }
+    if (!baseController.validateBodyFields(request, response, updateFolder.name, fields)) {
       return;
     }
 
-    const folderName = request.body.name.trim();
-    const folderFiles = request.body.files;
+    const folderId = request.params.folderId;
+    if (action !== FolderAction.Create 
+      && !baseController.validateId(folderId, response, updateFolder.name)) {
+      return;
+    }
 
     try {
-      await Album.updateOne(
-        {
-          "folder._id": new Types.ObjectId(folderId)
-        },
-        {
-          $set: {
-            "folder.$.name": folderName,
-            "folder.$.files": folderFiles
+      if (action === FolderAction.Create) {
+        const userId = await User.findOne({ userName }).select("_id").lean().then(u => u?._id);
+        if (userId) {
+          const album = await Album.findOne({ userId });
+          if (album) {
+            album.folder.push({
+              name: folderName,
+              files: []
+            });
+            await album.save();
+          } else {
+            await Album.create({
+              userId,
+              folder: [
+                {
+                  name: folderName,
+                  files: []
+                }
+              ]
+            });
           }
-        });
-
-      setLog(LogLevel.INFO, LogMessage.SUCCESS, updateAlbum.name);
+        }
+      } else if (action === FolderAction.Rename) {
+        await Album.updateOne(
+          {
+            "folder._id": new Types.ObjectId(folderId)
+          },
+          {
+            $set: {
+              "folder.$.name": folderName
+            }
+          });
+      } else if (action === FolderAction.Delete) {
+        await Album.updateOne(
+          {
+            "folder._id": new Types.ObjectId(folderId)
+          },
+          {
+            $pull: {
+              folder: { _id: new Types.ObjectId(folderId) }
+            }
+          }
+        );
+      }
+      const message = `${LogMessage.SUCCESS}, action: ${action}`;
+      setLog(LogLevel.INFO, message, updateFolder.name);
       responseHandler.success(response);
     } catch (error) {
-      baseController.errorHandler(response, error, updateAlbum.name);
+      baseController.errorHandler(response, error, updateFolder.name);
     }
   },
-  "updateAlbum"
+  "updateFolder"
 );

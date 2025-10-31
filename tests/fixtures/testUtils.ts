@@ -27,6 +27,16 @@ export const mockUserFindOne = (data: object | null = MOCK_USER_INFO): void => {
   (User.findOne as jest.Mock).mockResolvedValue(data);
 };
 
+export const mockUserFindOneOnceAndChain = (data: object | null = MOCK_USER_INFO): void => {
+  (User.findOne as jest.Mock)
+    .mockResolvedValueOnce(data)
+    .mockReturnValueOnce({
+      select: jest.fn().mockReturnThis(),
+      lean: jest.fn().mockReturnThis(),
+      then: jest.fn((cb) => cb(data)),
+    });
+};
+
 export const mockSession = {
   startTransaction: jest.fn(),
   commitTransaction: jest.fn(),

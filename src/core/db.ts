@@ -1,5 +1,6 @@
 import mongoose, { PipelineStage } from "mongoose";
 
+import "dotenv/config";
 import { RESPONSE_MESSAGE } from "../common/constants";
 import { isNullOrEmpty } from "../common/utils";
 

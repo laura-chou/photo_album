@@ -19,12 +19,14 @@ type RegisterRequest = {
 }
 
 interface UserAuthInfo {
+  _id: string;
   userName: string;
   password: string;
   token: string;
 }
 
 export const MOCK_USER_INFO: UserAuthInfo = { 
+  _id: "abc123",
   userName: "testuser",
   password: "$2b$12$Vq/jVzpDcq0h/oDw6.9a5OTDbMI5oLygA0HUxNStwP3We550BoFci",
   token: "token"

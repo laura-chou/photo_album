@@ -29,6 +29,7 @@ const spyOnGetClientIp = (ip: string): void => {
 describe("User API", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.resetAllMocks();
   });
 
   describe(`GET ${ROUTE.CAPTCHA}`, () => {

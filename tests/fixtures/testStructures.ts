@@ -175,9 +175,10 @@ export const describeValidationErrorTests = <T extends ValidationBaseModel>(
 
 export const describeServerErrorTests = (
   config: ServerErrorConfig,
-  expectResponseFn: typeof expectResponse
+  expectResponseFn: typeof expectResponse,
+  title = "Server Error Cases"
 ): void => {
-  describe("Server Error Cases", () => {
+  describe(title, () => {
     test.each(config.dbErrorCases)(
       "should return 500 if $name throws error",
       async({ mockFn, setupMocks }) => {
