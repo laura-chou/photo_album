@@ -4,6 +4,7 @@ import path from "path";
 import express, { Response } from "express";
 import jwt from "jsonwebtoken";
 import request from "supertest";
+import supertest from "supertest";
 import { v4 as uuidv4 } from "uuid";
 
 
@@ -146,63 +147,65 @@ describe("File API", () => {
     });
     
     describe("Validation Error Cases", () => {
-      test("should return bad request for invalid Content-Type", async() => {
-        mockUserFindOne();
-
-        const response = await request(app)
+      const uploadRequest = (): supertest.Test =>
+        supertest(app)
           .post(ROUTE.UPLOAD)
-          .set("Authorization", `Bearer ${token}`)
-          .send({});
-        
-        expectResponse.badRequest(response, RESPONSE_MESSAGE.INVALID_CONTENT_TYPE);
+          .set("Authorization", `Bearer ${token}`);
+
+      beforeEach(() => {
+        mockUserFindOne();
       });
 
-      test("should return bad request if no files uploaded", async() => {
-        mockUserFindOne();
+      const runBadRequestTest = async(
+        setupFn: (req: supertest.Test) => Promise<supertest.Response>,
+        expectedMessage: string
+      ): Promise<void> => {
+        const response = await setupFn(uploadRequest());
+        expectResponse.badRequest(response, expectedMessage);
+      };
 
-        const response = await request(app)
-          .post(ROUTE.UPLOAD)
-          .set("Authorization", `Bearer ${token}`)
-          .field("folderId", "507f1f77bcf86cd799439011");
-        
-        expectResponse.badRequest(response, RESPONSE_MESSAGE.NO_FILE);
+      test("should return 400 for invalid Content-Type", async() => {
+        await runBadRequestTest(
+          async(req) => req.send({}),
+          RESPONSE_MESSAGE.INVALID_CONTENT_TYPE
+        );
       });
 
-      test("should return bad request if no folderId", async() => {
-        mockUserFindOne();
-
-        const response = await request(app)
-          .post(ROUTE.UPLOAD)
-          .set("Authorization", `Bearer ${token}`)
-          .attach("file", path.join(__dirname, "files/19kb.png"));
-
-        expectResponse.badRequest(response, RESPONSE_MESSAGE.INVALID_JSON_KEY);
+      test("should return 400 if no files uploaded", async() => {
+        await runBadRequestTest(
+          async(req) => req.field("folderId", "507f1f77bcf86cd799439011"),
+          RESPONSE_MESSAGE.NO_FILE
+        );
       });
 
-      test("should return bad request if Id format is invalid", async() => {
-        mockUserFindOne();
-
-        const response = await request(app)
-          .post(ROUTE.UPLOAD)
-          .set("Authorization", `Bearer ${token}`)
-          .field("folderId", "invalid-id")
-          .attach("file", path.join(__dirname, "files/19kb.png"));
-
-        expectResponse.badRequest(response, RESPONSE_MESSAGE.INVALID_ID);
+      test("should return 400 if no folderId", async() => {
+        await runBadRequestTest(
+          async(req) => req.attach("file", path.join(__dirname, "files/19kb.png")),
+          RESPONSE_MESSAGE.INVALID_JSON_KEY
+        );
       });
 
-      test("should return bad request if total files exceed 3", async() => {
-        mockUserFindOne();
+      test("should return 400 if Id format is invalid", async() => {
+        await runBadRequestTest(
+          async(req) =>
+            req
+              .field("folderId", "invalid-id")
+              .attach("file", path.join(__dirname, "files/19kb.png")),
+          RESPONSE_MESSAGE.INVALID_ID
+        );
+      });
+
+      test("should return 400 if total files exceed 3", async() => {
         (Album.aggregate as jest.Mock).mockResolvedValue([{ fileCount: 2 }]);
 
-        const response = await request(app)
-          .post(ROUTE.UPLOAD)
-          .set("Authorization", `Bearer ${token}`)
-          .field("folderId", "507f1f77bcf86cd799439011")
-          .attach("file", path.join(__dirname, "files/19kb.png"))
-          .attach("file", path.join(__dirname, "files/19kb.png"));
-
-        expectResponse.badRequest(response, RESPONSE_MESSAGE.UPLOAD_LIMIT);
+        await runBadRequestTest(
+          async(req) =>
+            req
+              .field("folderId", "507f1f77bcf86cd799439011")
+              .attach("file", path.join(__dirname, "files/19kb.png"))
+              .attach("file", path.join(__dirname, "files/19kb.png")),
+          RESPONSE_MESSAGE.UPLOAD_LIMIT
+        );
       });
     });
 
@@ -224,60 +227,49 @@ describe("File API", () => {
     });
 
     describe("Server Error Cases", () => {
-      test("should return 500 if User.findOne throws error", async() => {
-        (User.findOne as jest.Mock).mockRejectedValueOnce(new Error("DB Error"));
-
-        const response = await request(app)
+const uploadRequest = (): supertest.Test =>
+        supertest(app)
           .post(ROUTE.UPLOAD)
           .set("Authorization", `Bearer ${token}`)
           .field("folderId", "507f1f77bcf86cd799439011")
-          .attach("file", path.join(__dirname, "files/19kb.png"));
-        
-        expectResponse.error(response);
+          .attach("file", Buffer.from("test"), "19kb.png");
+
+      const runServerErrorTest = async(mockFn: () => void): Promise<void> => {
+          mockFn();
+          const response: supertest.Response = await uploadRequest();
+          expectResponse.error(response);
+        };
+
+      test("should return 500 if User.findOne throws error", async() => {
+        await runServerErrorTest(() => {
+          (User.findOne as jest.Mock).mockRejectedValueOnce(new Error("DB Error"));
+        });
       });
 
       test("should return 500 if Album.aggregate throws error", async() => {
-        mockUserFindOne();
-        (Album.aggregate as jest.Mock).mockRejectedValueOnce(new Error("DB Error"));
-
-        const response = await request(app)
-          .post(ROUTE.UPLOAD)
-          .set("Authorization", `Bearer ${token}`)
-          .field("folderId", "507f1f77bcf86cd799439011")
-          .attach("file", path.join(__dirname, "files/19kb.png"));
-        
-        expectResponse.error(response);
+        await runServerErrorTest(() => {
+          mockUserFindOne();
+          (Album.aggregate as jest.Mock).mockRejectedValueOnce(new Error("DB Error"));
+        });
       });
 
       test("should return 500 if uploadToFTP throws error", async() => {
-        mockUserFindOne();
-        (Album.aggregate as jest.Mock).mockResolvedValue([{ fileCount: 1 }]);
-        (uuidv4 as jest.Mock).mockReturnValueOnce("uuid1");
-        jest.spyOn(fileUpload, "uploadToFTP").mockRejectedValueOnce(new Error("upload fail"));
-
-        const response = await request(app)
-          .post(ROUTE.UPLOAD)
-          .set("Authorization", `Bearer ${token}`)
-          .field("folderId", "507f1f77bcf86cd799439011")
-          .attach("file", path.join(__dirname, "files/19kb.png"));
-        
-        expectResponse.error(response);
+        await runServerErrorTest(() => {
+          mockUserFindOne();
+          (Album.aggregate as jest.Mock).mockResolvedValue([{ fileCount: 1 }]);
+          (uuidv4 as jest.Mock).mockReturnValueOnce("uuid1");
+          jest.spyOn(fileUpload, "uploadToFTP").mockRejectedValueOnce(new Error("upload fail"));
+        });
       });
 
       test("should return 500 if Album.updateOne throws error", async() => {
-        mockUserFindOne();
-        (Album.aggregate as jest.Mock).mockResolvedValue([{ fileCount: 1 }]);
-        (uuidv4 as jest.Mock).mockReturnValueOnce("uuid1");
-        jest.spyOn(fileUpload, "uploadToFTP").mockResolvedValue();
-        (Album.updateOne as jest.Mock).mockRejectedValueOnce(new Error("DB Error"));
-
-        const response = await request(app)
-          .post(ROUTE.UPLOAD)
-          .set("Authorization", `Bearer ${token}`)
-          .field("folderId", "507f1f77bcf86cd799439011")
-          .attach("file", path.join(__dirname, "files/19kb.png"));
-
-        expectResponse.error(response);
+        await runServerErrorTest(() => {
+          mockUserFindOne();
+          (Album.aggregate as jest.Mock).mockResolvedValue([{ fileCount: 1 }]);
+          (uuidv4 as jest.Mock).mockReturnValueOnce("uuid1");
+          jest.spyOn(fileUpload, "uploadToFTP").mockResolvedValue();
+          (Album.updateOne as jest.Mock).mockRejectedValueOnce(new Error("DB Error"));
+        });
       });
     });
   });
