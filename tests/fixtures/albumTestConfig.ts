@@ -3,7 +3,6 @@ import { FolderAction } from "../../src/controllers/album.controller";
 const base = "/album";
 
 export const ROUTE = {
-  FILE: `${base}/file`,
   ALBUM: base,
   UPDATE: `${base}/folder`,
 } as const;

@@ -22,7 +22,9 @@ export const LogMessage = {
     EXTENSIONLIMIT: "extension limit reached.",
     CUSTNOTDUE: "customer is not due yet.",
     TOOMANYREQUESTS: "Too many requests.",
-    FTPFAIL: "FTP upload failed."
+    FTPFAIL: "FTP upload failed.",
+    FILELIMITSIZE: "File size exceeds the limit 1MB.",
+    FILEFORMAT: "Invalid file format."
   }
 } as const;
 

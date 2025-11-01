@@ -8,6 +8,7 @@ export const HTTP_STATUS = {
   FORBIDDEN: 403,
   NOT_FOUND: 404,
   CONFLICT: 409,
+  PAYLOAD_TOO_LARGE: 413,
   TOO_MANY_REQUESTS: 429,
   SERVER_ERROR: 500
 } as const;
@@ -17,7 +18,8 @@ export const CONTENT_TYPE = {
   JSON_WITH_CHARSET: /application\/json/,
   TEXT: "text/html",
   TEXT_WITH_CHARSET: /text\/html/,
-  FORM_URLENCODED: "application/x-www-form-urlencoded"
+  FORM_URLENCODED: "application/x-www-form-urlencoded",
+  FORM_DATA: "multipart/form-data"
 } as const;
 
 export const RESPONSE_MESSAGE = {
@@ -35,5 +37,9 @@ export const RESPONSE_MESSAGE = {
   INVALID_ID: "Invalid ID format.",
   DATA_ALREADY_EXISTS: "This record already exists.",
   TOO_MANY_REQUESTS: "Too many requests. Please wait a moment.",
-  INVALID_CAPTCHA: "Captcha is incorrect."
+  INVALID_CAPTCHA: "Captcha is incorrect.",
+  UPLOAD_LIMIT: "File upload limit exceeded (max 3 files).",
+  NO_FILE: "No file upload.",
+  LIMIT_FILE_SIZE: "File size exceeds the limit. Please upload a file smaller than 1MB.",
+  LIMIT_FORMAT: "Invalid file format. Only image files are allowed."
 } as const;

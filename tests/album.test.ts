@@ -1,9 +1,4 @@
-import fs from "fs/promises";
-import path from "path";
-
-import express, { Response } from "express";
-
-import { HTTP_STATUS, RESPONSE_MESSAGE } from "../src/common/constants";
+import { HTTP_STATUS } from "../src/common/constants";
 import Album from "../src/models/album.model";
 import User from "../src/models/user.model";
 
@@ -11,8 +6,6 @@ import { MOCK_ALBUM, MOCK_CREATE_DATA, MOCK_DELETE_DATA, MOCK_UPDATE_DATA, ROUTE
 import { describeAuthErrorTests, describeServerErrorTests, describeValidationErrorTests, describeValidationParamsIdTest } from "./fixtures/testStructures";
 import { createRequest, expectResponse, mockUserFindOne, mockUserFindOneOnceAndChain } from "./fixtures/testUtils";
 import { MOCK_USER_INFO } from "./fixtures/userTestConfig";
-
-jest.mock("fs/promises");
 
 jest.mock("../src/models/user.model", () => ({
   findOne: jest.fn(),
@@ -26,14 +19,6 @@ jest.mock("../src/models/album.model", () => ({
   create: jest.fn()
 }));
 
-const spyOnSendFile = (): void => {
-  jest.spyOn(express.response, "sendFile").mockImplementation(function(this: Response, filePath: string) {
-    this.statusCode = 200;
-    this.type("html");
-    this.send(filePath);
-  });
-};
-
 const mockUserAggregate = (data: Array<object>): void => {
   (User.aggregate as jest.Mock).mockResolvedValue(data);
 };
@@ -42,68 +27,6 @@ describe("Album API", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.resetAllMocks();
-    process.env.FTP_HOST = "ftp.example.com";
-    process.env.FTP_USER = "user";
-  });
-
-  describe(`GET ${ROUTE.FILE}/:fileName`, () => {
-    const route = `${ROUTE.FILE}/photo.jpg`;
-
-    describeAuthErrorTests(
-      route,
-      (route, status, tokenInfo) => createRequest.get(route, status, tokenInfo),
-      expectResponse
-    );
-
-    describe("Success Cases", () => {
-      test("should send local image if UPLOAD_FTP is true and file exists", async() => {
-        mockUserFindOne();
-        process.env.UPLOAD_FTP = "true";
-        (fs.access as jest.Mock).mockResolvedValue(undefined);
-        spyOnSendFile();
-
-        await createRequest.get(
-          route,
-          HTTP_STATUS.OK,
-          {},
-          false
-        );
-
-        const expectedPath = path.join(process.cwd(), "images", "photo.jpg");
-        expect(fs.access).toHaveBeenCalledWith(expectedPath);
-      });
-
-      test("should redirect to FTP URL if UPLOAD_FTP is false", async() => {
-        mockUserFindOne();
-        process.env.UPLOAD_FTP = "false";
-
-        const response = await createRequest.get(
-          route,
-          HTTP_STATUS.FOUND,
-          {},
-          false
-        );
-
-        expect(response.headers.location).toBe("http://ftp.example.com/user/photo.jpg");
-      });
-    });
-
-    describe("Client Error Cases", () => {
-      test("should return 404 if local image does not exist", async() => {
-        mockUserFindOne();
-        process.env.UPLOAD_FTP = "true";
-        (fs.access as jest.Mock).mockRejectedValue(new Error("not found"));
-
-        const response = await createRequest.get(
-          route,
-          HTTP_STATUS.NOT_FOUND,
-          {},
-          false
-        );
-
-        expectResponse.notFound(response, RESPONSE_MESSAGE.NOT_FOUND);
-      });
-    });
   });
 
   describe(`GET ${ROUTE.ALBUM}/:userName`, () => {

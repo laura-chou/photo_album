@@ -6,7 +6,7 @@ import { RESPONSE_MESSAGE } from "../common/constants";
 import { isNullOrEmpty } from "../common/utils";
 
 
-interface Files {
+export interface Files {
   customName: string;
   storeName: string;
 }

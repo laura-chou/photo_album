@@ -21,18 +21,13 @@ export const uploadToFTP = async(
   const functionName = "uploadToFTP";
 
   if (!convertToBool(process.env.UPLOAD_FTP)) {
-    multer.diskStorage({
-      destination(_req, _file, cb) {
-        const fullPath =  path.join(defaultPath, folderId);
-        if (!fs.existsSync(fullPath)) {
-          fs.mkdirSync(fullPath, { recursive: true });
-        }
-        cb(null, fullPath);
-      },
-      filename(_req, _file, cb) {
-        cb(null, filename);
-      },
-    });
+    const fullPath = path.join(defaultPath, folderId);
+    if (!fs.existsSync(fullPath)) {
+      fs.mkdirSync(fullPath, { recursive: true });
+    }
+
+    const filePath = path.join(fullPath, filename);
+    await fs.promises.writeFile(filePath, buffer);
     return;
   }
 
@@ -43,14 +38,12 @@ export const uploadToFTP = async(
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       user: process.env.FTP_USER!,
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      password: process.env.FTP_PASSWORD!,
-      secure: false,
+      password: process.env.FTP_USER!,
+      secure: false
     });
 
     const remoteFolder = `${defaultPath}/${folderId}/`;
-
     await client.ensureDir(remoteFolder);
-
     await client.cd(remoteFolder);
 
     const stream = Readable.from(buffer);
@@ -67,20 +60,20 @@ export const uploadToFTP = async(
 
 const upload = multer({
   storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 1024 * 1024, // 1MB
+  },
   fileFilter(
     _req: Request,
     file: Express.Multer.File,
     cb: FileFilterCallback
   ) {
-    if (!file.mimetype.includes("image")) {
-      cb(new Error("LIMIT_FORMAT"));
+    if (!file.mimetype.startsWith("image/")) {
+      cb(new Error("Invalid file format"));
     } else {
       cb(null, true);
     }
-  },
-  limits: {
-    fileSize: 1024 * 1024, // 1MB
-  },
+  }
 });
 
 export default upload;

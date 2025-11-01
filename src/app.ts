@@ -8,7 +8,7 @@ import morgan from "morgan";
 import { responseHandler } from "./common/response";
 import { isJestTest, isNullOrEmpty } from "./common/utils";
 import { connectDB } from "./core/db";
-import { LogLevel, setLog } from "./core/logger";
+import { LogLevel, LogMessage, setLog } from "./core/logger";
 import protectedRoutes from "./routes/protected.routes";
 import publicRoutes from "./routes/public.routes";
 
@@ -28,7 +28,6 @@ app.use(morgan(":apiPath", {
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.set("trust proxy", true);
 
 publicRoutes.forEach(route => {
   app.use(route.prefix, route.router);
@@ -56,18 +55,30 @@ const corsOptions: CorsOptions = {
 
 app.use(cors(corsOptions));
 
+protectedRoutes.forEach(route => {
+  app.use(route.prefix, route.router);
+});
+
 app.use((error: Error, _request: Request, response: Response, _next: NextFunction) => {
   if (!isNullOrEmpty(error.message)) {
-    setLog(LogLevel.ERROR, error.message);
-    responseHandler.forbidden(response);
+    switch (error.message) {
+      case "File too large":
+        setLog(LogLevel.ERROR, LogMessage.ERROR.FILELIMITSIZE, "upload");
+        responseHandler.payloadTooLarge(response);
+        break;
+      case "Invalid file format":
+        setLog(LogLevel.ERROR, LogMessage.ERROR.FILEFORMAT, "upload");
+        responseHandler.badRequest(response, "LIMIT_FORMAT");
+        break;
+      default:
+        setLog(LogLevel.ERROR, error.message);
+        responseHandler.forbidden(response);
+        break;
+    }
   } else {
     setLog(LogLevel.ERROR, `Unhandled error:\n ${error}`);
     responseHandler.serverError(response);
   }
-});
-
-protectedRoutes.forEach(route => {
-  app.use(route.prefix, route.router);
 });
 
 if (!isJestTest) connectDB();

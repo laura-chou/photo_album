@@ -44,14 +44,17 @@ export const responseHandler = {
 
   badRequest(
     res: Response,
-    type: "CONTENT_TYPE" | "JSON_KEY" | "JSON_FORMAT" | "INVALID_ID" | "INVALID_CAPTCHA"
+    type: "CONTENT_TYPE" | "JSON_KEY" | "JSON_FORMAT" | "INVALID_ID" | "INVALID_CAPTCHA" | "UPLOAD_LIMIT" | "NO_FILE" | "LIMIT_FORMAT"
   ): void {
     const messageMap = {
       CONTENT_TYPE: RESPONSE_MESSAGE.INVALID_CONTENT_TYPE,
       JSON_KEY: RESPONSE_MESSAGE.INVALID_JSON_KEY,
       JSON_FORMAT: RESPONSE_MESSAGE.INVALID_JSON_FORMAT,
       INVALID_ID: RESPONSE_MESSAGE.INVALID_ID,
-      INVALID_CAPTCHA: RESPONSE_MESSAGE.INVALID_CAPTCHA
+      INVALID_CAPTCHA: RESPONSE_MESSAGE.INVALID_CAPTCHA,
+      UPLOAD_LIMIT: RESPONSE_MESSAGE.UPLOAD_LIMIT,
+      NO_FILE: RESPONSE_MESSAGE.NO_FILE,
+      LIMIT_FORMAT: RESPONSE_MESSAGE.LIMIT_FORMAT
     };
 
     sendResponse(
@@ -98,6 +101,14 @@ export const responseHandler = {
       res,
       HTTP_STATUS.CONFLICT,
       message
+    );
+  },
+
+  payloadTooLarge(res: Response): void {
+    sendResponse(
+      res, 
+      HTTP_STATUS.PAYLOAD_TOO_LARGE, 
+      RESPONSE_MESSAGE.LIMIT_FILE_SIZE
     );
   },
 

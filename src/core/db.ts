@@ -1,4 +1,4 @@
-import mongoose, { PipelineStage } from "mongoose";
+import mongoose, { PipelineStage, Types } from "mongoose";
 
 import "dotenv/config";
 import { RESPONSE_MESSAGE } from "../common/constants";
@@ -9,6 +9,10 @@ import { LogLevel, LogMessage, setLog } from "./logger";
 if (isNullOrEmpty(process.env.DBURL)) {
   throw new Error(RESPONSE_MESSAGE.ENV_ERROR);
 }
+
+const toObjectId = (idStr: string): Types.ObjectId => {
+  return new Types.ObjectId(idStr);
+};
 
 export const connectDB = async(): Promise<void> => {
   try {
@@ -45,4 +49,10 @@ export const getUserAlbumPipeline = (userName: string): PipelineStage[] => [
       folder: "$albums.folder"
     }
   }
+];
+
+export const getFolderFilesCountPipeline = (folderId: string): PipelineStage[] => [
+  { $unwind: "$folder" },
+  { $match: { "folder._id": toObjectId(folderId) } },
+  { $project: { _id: 0, fileCount: { $size: "$folder.files" } } }
 ];

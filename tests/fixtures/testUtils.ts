@@ -232,6 +232,13 @@ export const expectResponse = {
     });
   },
 
+  payloadTooLarge(response: Response): void {
+    expect(response.body).toEqual({
+      status: HTTP_STATUS.PAYLOAD_TOO_LARGE,
+      message: RESPONSE_MESSAGE.LIMIT_FILE_SIZE
+    });
+  },
+
   tooManyRequests: (response: Response): void => {
     expect(response.body).toEqual({
       status: HTTP_STATUS.TOO_MANY_REQUESTS,
