@@ -55,8 +55,8 @@ describe("File API", () => {
     process.env.FTP_USER = "user";
   });
 
-  describe(`GET ${ROUTE.FILE}/:fileName`, () => {
-    const route = `${ROUTE.FILE}/photo.jpg`;
+  describe(`GET ${ROUTE.FILE}/:folderId/:fileName`, () => {
+    const route = `${ROUTE.FILE}/abc123/photo.jpg`;
 
     describeAuthErrorTests(
       route,
@@ -65,9 +65,9 @@ describe("File API", () => {
     );
 
     describe("Success Cases", () => {
-      test("should send local image if UPLOAD_FTP is true and file exists", async() => {
+      test("should send local image if UPLOAD_FTP is false and file exists", async() => {
         mockUserFindOne();
-        process.env.UPLOAD_FTP = "true";
+        process.env.UPLOAD_FTP = "false";
         (fsPromises.access as jest.Mock).mockResolvedValue(undefined);
         spyOnSendFile();
 
@@ -78,13 +78,13 @@ describe("File API", () => {
           false
         );
 
-        const expectedPath = path.join(process.cwd(), "images", "photo.jpg");
+        const expectedPath = path.join(process.cwd(), "photo-album", "abc123", "photo.jpg");
         expect(fsPromises.access).toHaveBeenCalledWith(expectedPath);
       });
 
-      test("should redirect to FTP URL if UPLOAD_FTP is false", async() => {
+      test("should redirect to FTP URL if UPLOAD_FTP is true", async() => {
         mockUserFindOne();
-        process.env.UPLOAD_FTP = "false";
+        process.env.UPLOAD_FTP = "true";
 
         const response = await createRequest.get(
           route,
@@ -93,14 +93,14 @@ describe("File API", () => {
           false
         );
 
-        expect(response.headers.location).toBe("http://ftp.example.com/user/photo.jpg");
+        expect(response.headers.location).toBe("http://ftp.example.com/user/photo-album/abc123/photo.jpg");
       });
     });
 
     describe("Client Error Cases", () => {
       test("should return 404 if local image does not exist", async() => {
         mockUserFindOne();
-        process.env.UPLOAD_FTP = "true";
+        process.env.UPLOAD_FTP = "false";
         (fsPromises.access as jest.Mock).mockRejectedValue(new Error("not found"));
 
         const response = await createRequest.get(

@@ -46,6 +46,7 @@ export const getUserAlbumPipeline = (userName: string): PipelineStage[] => [
   { $unwind: "$albums" },
   {
     $project: {
+      _id: 0,
       folder: "$albums.folder"
     }
   }
@@ -53,6 +54,15 @@ export const getUserAlbumPipeline = (userName: string): PipelineStage[] => [
 
 export const getFolderFilesCountPipeline = (folderId: string): PipelineStage[] => [
   { $unwind: "$folder" },
-  { $match: { "folder._id": toObjectId(folderId) } },
-  { $project: { _id: 0, fileCount: { $size: "$folder.files" } } }
+  { 
+    $match: { 
+      "folder._id": toObjectId(folderId) 
+    }
+  },
+  { 
+    $project: { 
+      _id: 0,
+      fileCount: { $size: "$folder.files" }
+    } 
+  }
 ];

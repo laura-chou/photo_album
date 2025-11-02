@@ -16,10 +16,11 @@ import * as baseController from "./base.controller";
 
 export const readPhoto = setFunctionName(
   async(request: Request, response: Response): Promise<void> => {
+    const folderId = request.params.folderId;
     const fileName = request.params.fileName;
 
-    if (convertToBool(process.env.UPLOAD_FTP)) {
-      const localPath = path.join(process.cwd(), "images", fileName);
+    if (!convertToBool(process.env.UPLOAD_FTP)) {
+      const localPath = path.join(process.cwd(), "photo-album", folderId, fileName);
       try {
         await fs.access(localPath);
         setLog(LogLevel.INFO, LogMessage.SUCCESS, readPhoto.name);
@@ -33,7 +34,7 @@ export const readPhoto = setFunctionName(
       }
     }
 
-    const ftpUrl = `http://${process.env.FTP_HOST}/${process.env.FTP_USER}/${fileName}`;
+    const ftpUrl = `http://${process.env.FTP_HOST}/${process.env.FTP_USER}/photo-album/${folderId}/${fileName}`;
     response.status(HTTP_STATUS.FOUND)
       .location(ftpUrl)
       .type("html")
