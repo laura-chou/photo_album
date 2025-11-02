@@ -66,3 +66,19 @@ export const getFolderFilesCountPipeline = (folderId: string): PipelineStage[] =
     } 
   }
 ];
+
+export const getFilePipeline = (fileId: string): PipelineStage[] => [
+  { $unwind: "$folder" },
+  { $unwind: "$folder.files" },
+  { 
+    $match: { 
+      "folder.files._id": toObjectId(fileId) 
+    } 
+  },
+  { 
+    $project: { 
+      _id: 0,
+      file: "$folder.files"
+    }
+  }
+];

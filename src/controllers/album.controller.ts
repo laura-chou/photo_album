@@ -2,8 +2,8 @@ import { Request, Response } from "express";
 import { Types } from "mongoose";
 
 import { responseHandler } from "../common/response";
-import { setFunctionName } from "../common/utils";
-import { getUserAlbumPipeline } from "../core/db";
+import { isNullOrEmpty, setFunctionName } from "../common/utils";
+import { getFilePipeline, getUserAlbumPipeline } from "../core/db";
 import { deleteFromFTP } from "../core/file-upload";
 import { LogLevel, LogMessage, setLog } from "../core/logger";
 import Album from "../models/album.model";
@@ -42,13 +42,17 @@ export const updateFolder = setFunctionName(
     const fields = [
       { key: "action", type: "string" }
     ];
-    const { action, folderName, userName } = request.body;
-    if (action === FolderAction.Create) {
-      fields.push({ key: "userName", type: "string" });
+    const { action, folderName, userName, fileId } = request.body;
+    switch (action) {
+      case FolderAction.Create:
+        fields.push({ key: "userName", type: "string" });
+        fields.push({ key: "folderName", type: "string" });
+        break;
+      case FolderAction.Rename:
+        fields.push({ key: "folderName", type: "string" });
+        break;
     }
-    if (action !== FolderAction.Delete) {
-      fields.push({ key: "folderName", type: "string" });
-    }
+
     if (!baseController.validateBodyFields(request, response, updateFolder.name, fields)) {
       return;
     }
@@ -56,6 +60,13 @@ export const updateFolder = setFunctionName(
     const folderId = request.params.folderId;
     if (action !== FolderAction.Create
       && !baseController.validateId(folderId, response, updateFolder.name)) {
+      return;
+    }
+
+    if (action === FolderAction.Delete
+      && !isNullOrEmpty(fileId)
+      && !baseController.validateId(fileId, response, updateFolder.name)
+    ) {
       return;
     }
 
@@ -93,17 +104,33 @@ export const updateFolder = setFunctionName(
             }
           });
       } else if (action === FolderAction.Delete) {
-        await deleteFromFTP(folderId);
-        await Album.updateOne(
-          {
-            "folder._id": new Types.ObjectId(folderId)
-          },
-          {
-            $pull: {
-              folder: { _id: new Types.ObjectId(folderId) }
-            }
+        if (!isNullOrEmpty(fileId)) {
+          const result = await Album.aggregate(getFilePipeline(fileId));
+          if (!result || result.length === 0 ) {
+            const message = `${LogMessage.ERROR.NOTFOUND}, \n{"action":${action},"folderId":${folderId}, "fileId":${fileId}}`;
+            setLog(LogLevel.ERROR, message, updateFolder.name);
+            responseHandler.notFound(response);
+            return;
           }
-        );
+          const storeName = result[0]?.file?.storeName;
+          await Album.updateOne(
+            { "folder.files._id": fileId },
+            { $pull: { "folder.$[].files": { _id: fileId } } }
+          );
+          await deleteFromFTP(folderId, storeName);
+        } else {
+          await Album.updateOne(
+            {
+              "folder._id": new Types.ObjectId(folderId)
+            },
+            {
+              $pull: {
+                folder: { _id: new Types.ObjectId(folderId) }
+              }
+            }
+          );
+          await deleteFromFTP(folderId);
+        }
       }
       const message = `${LogMessage.SUCCESS}, action: ${action}`;
       setLog(LogLevel.INFO, message, updateFolder.name);

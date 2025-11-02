@@ -91,9 +91,10 @@ export const describeValidationParamsIdTest = (
     status: number,
     tokenInfo?: Partial<TokenInfo>
   ) => Promise<request.Response>,
-  expectResponseFn: typeof expectResponse
+  expectResponseFn: typeof expectResponse,
+  title = "Validation Id Parameter"
 ): void => {
-  describe("Validation Id Parameter", () => {
+  describe(title, () => {
     test("should return 400 if Id format is invalid", async() => {
       mockUserFindOne();
       

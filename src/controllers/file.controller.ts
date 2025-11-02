@@ -73,7 +73,13 @@ export const uploadPhoto = setFunctionName(
 
     try {
       const result = await Album.aggregate(getFolderFilesCountPipeline(folderId));
-      const currentFileCount = result?.[0]?.fileCount ?? 0;
+      if (!result || result.length === 0 ) {
+        const message = `${LogMessage.ERROR.NOTFOUND}, folderId: ${folderId}`;
+        setLog(LogLevel.ERROR, message, uploadPhoto.name);
+        responseHandler.notFound(response);
+        return;
+      }
+      const currentFileCount = result[0]?.fileCount;
       if (files.length + currentFileCount > 3) {
         files.forEach(file => file.buffer = Buffer.alloc(0));
         setLog(LogLevel.ERROR, RESPONSE_MESSAGE.UPLOAD_LIMIT, uploadPhoto.name);

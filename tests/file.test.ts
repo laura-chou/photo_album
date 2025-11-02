@@ -145,6 +145,21 @@ describe("File API", () => {
         expectResponse.payloadTooLarge(response);
       });
     });
+
+    describe("Not Found Cases", () => {
+      test("should return 404 when folder not found", async() => {
+        mockUserFindOne();
+        (Album.aggregate as jest.Mock).mockResolvedValue(null);
+
+        const response = await request(app)
+          .post(ROUTE.UPLOAD)
+          .set("Authorization", `Bearer ${token}`)
+          .field("folderId", "507f1f77bcf86cd799439011")
+          .attach("file", path.join(__dirname, "files/19kb.png"));
+
+        expectResponse.notFound(response, []);
+      });
+    });
     
     describe("Validation Error Cases", () => {
       const uploadRequest = (): supertest.Test =>

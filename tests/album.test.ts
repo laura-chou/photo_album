@@ -2,7 +2,9 @@ import { HTTP_STATUS } from "../src/common/constants";
 import Album from "../src/models/album.model";
 import User from "../src/models/user.model";
 
-import { MOCK_ALBUM, MOCK_CREATE_DATA, MOCK_DELETE_DATA, MOCK_UPDATE_DATA, ROUTE } from "./fixtures/albumTestConfig";
+import { MOCK_ALBUM, MOCK_FILE, MOCK_CREATE_DATA,
+  MOCK_DELETE_FOLDER_DATA, MOCK_DELETE_FILE_DATA, MOCK_DELETE_INVALID_DATA,
+  MOCK_UPDATE_DATA, ROUTE } from "./fixtures/albumTestConfig";
 import { describeAuthErrorTests, describeServerErrorTests, describeValidationErrorTests, describeValidationParamsIdTest } from "./fixtures/testStructures";
 import { createRequest, expectResponse, mockUserFindOne, mockUserFindOneOnceAndChain } from "./fixtures/testUtils";
 import { MOCK_USER_INFO } from "./fixtures/userTestConfig";
@@ -16,11 +18,16 @@ jest.mock("../src/models/user.model", () => ({
 jest.mock("../src/models/album.model", () => ({
   updateOne: jest.fn(),
   findOne: jest.fn(),
-  create: jest.fn()
+  create: jest.fn(),
+  aggregate: jest.fn()
 }));
 
 const mockUserAggregate = (data: Array<object>): void => {
   (User.aggregate as jest.Mock).mockResolvedValue(data);
+};
+
+const mockAlbumAggregate = (data: Array<object> | null): void => {
+  (Album.aggregate as jest.Mock).mockResolvedValue(data);
 };
 
 describe("Album API", () => {
@@ -99,9 +106,32 @@ describe("Album API", () => {
     describeValidationParamsIdTest(
       `${ROUTE.UPDATE}/invalid-id`,
       (route, status, tokenInfo) => createRequest.patch(route, MOCK_UPDATE_DATA, status, tokenInfo),
-      expectResponse
+      expectResponse,
+      "Action Rename Validation Id Parameter"
     );
 
+    describeValidationParamsIdTest(
+      route,
+      (route, status, tokenInfo) => createRequest.patch(route, MOCK_DELETE_INVALID_DATA, status, tokenInfo),
+      expectResponse,
+      "Action Delete Validation Id Parameter"
+    );
+
+    describe("Not Found Cases", () => {
+      test("should return 404 when action is 'delete' and file not found", async() => {
+        mockUserFindOne();
+        mockAlbumAggregate(null);
+
+        const response = await createRequest.patch(
+          route,
+          MOCK_DELETE_FILE_DATA,
+          HTTP_STATUS.NOT_FOUND
+        );
+
+        expectResponse.notFound(response, []);
+      });
+    });
+    
     describe("Success Cases", () => {
       test("should create a new folder when action is 'create' and user is exist", async() => {
         mockUserFindOneOnceAndChain();
@@ -149,7 +179,20 @@ describe("Album API", () => {
 
         const response = await createRequest.patch(
           route,
-          MOCK_DELETE_DATA,
+          MOCK_DELETE_FOLDER_DATA,
+          HTTP_STATUS.OK
+        );
+
+        expectResponse.updated(response);
+      });
+
+      test("should delete a file when action is 'delete'", async() => {
+        mockUserFindOne();
+        mockAlbumAggregate(MOCK_FILE);
+
+        const response = await createRequest.patch(
+          route,
+          MOCK_DELETE_FILE_DATA,
           HTTP_STATUS.OK
         );
 
@@ -189,14 +232,14 @@ describe("Album API", () => {
             name: "Album.findOne",
             mockFn: Album.findOne as jest.Mock,
             setupMocks: (): void => {
-              mockUserFindOne();
+              mockUserFindOneOnceAndChain();
             }
           },
           {
             name: "Album.save",
             mockFn: Album.findOne as jest.Mock,
             setupMocks: (): void => {
-              mockUserFindOne();
+              mockUserFindOneOnceAndChain();
               const mockSave = jest.fn().mockRejectedValue(new Error("DB error"));
               const mockAlbum = { folder: [], save: mockSave };
               (Album.findOne as jest.Mock).mockResolvedValue(mockAlbum);
@@ -207,7 +250,7 @@ describe("Album API", () => {
             name: "Album.create",
             mockFn: Album.create as jest.Mock,
             setupMocks: (): void => {
-              mockUserFindOne();
+              mockUserFindOneOnceAndChain();
               (Album.findOne as jest.Mock).mockResolvedValue(null);
             }
           }
@@ -244,7 +287,7 @@ describe("Album API", () => {
       {
         route: route,
         requestFn: createRequest.patch,
-        requestBody: MOCK_DELETE_DATA,
+        requestBody: MOCK_DELETE_FOLDER_DATA,
         dbErrorCases: [
           {
             name: "User.findOne",
@@ -260,7 +303,34 @@ describe("Album API", () => {
         ]
       },
       expectResponse,
-      "Action Delete Server Error Cases"
+      "Action Delete Folder Server Error Cases"
+    );
+
+    describeServerErrorTests(
+      {
+        route: route,
+        requestFn: createRequest.patch,
+        requestBody: MOCK_DELETE_FILE_DATA,
+        dbErrorCases: [
+          {
+            name: "Album.aggregate",
+            mockFn: Album.aggregate as jest.Mock,
+            setupMocks: (): void => {
+              mockUserFindOne();
+            }
+          },
+          {
+            name: "Album.updateOne",
+            mockFn: Album.updateOne as jest.Mock,
+            setupMocks: (): void => {
+              mockUserFindOne();
+              mockAlbumAggregate(MOCK_FILE);
+            }
+          }
+        ]
+      },
+      expectResponse,
+      "Action Delete File Server Error Cases"
     );
   });
 });

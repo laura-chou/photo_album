@@ -23,10 +23,15 @@ interface UserAlbumItem {
   folder: Folder[];
 }
 
+interface FileItem {
+  file: Files;
+}
+
 type UpdateFolderModel = {
   action: FolderAction;
   folderName?: string;
   userName?: string;
+  fileId?: string;
 };
 
 export const MOCK_ALBUM: UserAlbumItem[] = [
@@ -43,13 +48,27 @@ export const MOCK_ALBUM: UserAlbumItem[] = [
   }
 ];
 
+export const MOCK_FILE: FileItem[] = [{
+  file: { _id: "507f1f77bcf86cd799439012", customName: "customA.jpg", storeName: "storeA.jpg" }
+}];
+
 export const MOCK_UPDATE_DATA: UpdateFolderModel = {
   action: FolderAction.Rename,
   folderName: "updateFolder"
 };
 
-export const MOCK_DELETE_DATA: UpdateFolderModel = {
+export const MOCK_DELETE_FOLDER_DATA: UpdateFolderModel = {
   action: FolderAction.Delete
+};
+
+export const MOCK_DELETE_FILE_DATA: UpdateFolderModel = {
+  action: FolderAction.Delete,
+  fileId: "507f1f77bcf86cd799439012"
+};
+
+export const MOCK_DELETE_INVALID_DATA: UpdateFolderModel = {
+  action: FolderAction.Delete,
+  fileId: "invalid-id"
 };
 
 export const MOCK_CREATE_DATA: UpdateFolderModel = {
