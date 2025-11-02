@@ -143,18 +143,18 @@ describe("Album API", () => {
 
         expectResponse.updated(response);
       });
-    });
 
-    test("should delete a folder when action is 'delete'", async() => {
-      mockUserFindOne();
+      test("should delete a folder when action is 'delete'", async() => {
+        mockUserFindOne();
 
-      const response = await createRequest.patch(
-        route,
-        MOCK_DELETE_DATA,
-        HTTP_STATUS.OK
-      );
+        const response = await createRequest.patch(
+          route,
+          MOCK_DELETE_DATA,
+          HTTP_STATUS.OK
+        );
 
-      expectResponse.updated(response);
+        expectResponse.updated(response);
+      });
     });
 
     describeServerErrorTests(

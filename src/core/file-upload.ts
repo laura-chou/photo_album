@@ -58,6 +58,60 @@ export const uploadToFTP = async(
   }
 };
 
+export const deleteFromFTP = async(
+  folderId: string,
+  filename?: string
+): Promise<void> => {
+  const client = new Client();
+  const functionName = "deleteFromFTP";
+
+  if (!convertToBool(process.env.UPLOAD_FTP)) {
+    const targetPath = filename
+      ? path.join(defaultPath, folderId, filename)
+      : path.join(defaultPath, folderId);
+
+    try {
+      await fs.promises.rm(targetPath, { recursive: true, force: true });
+      setLog(LogLevel.INFO, `local delete success: ${targetPath}`, functionName);
+    } catch (error) {
+      const message = `local delete failed: ${targetPath}\n${error}`;
+      setLog(LogLevel.ERROR, message, functionName);
+      throw error;
+    }
+
+    return;
+  }
+
+  try {
+    await client.access({
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      host: process.env.FTP_HOST!,
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      user: process.env.FTP_USER!,
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      password: process.env.FTP_USER!,
+      secure: false,
+    });
+
+    const remoteBase = `${defaultPath}/${folderId}`;
+
+    if (filename) {
+      const remoteFilePath = `${remoteBase}/${filename}`;
+      await client.remove(remoteFilePath);
+      setLog(LogLevel.INFO, `FTP file delete success: ${remoteFilePath}`, functionName);
+    } else {
+      await client.removeDir(remoteBase);
+      setLog(LogLevel.INFO, `FTP folder delete success: ${remoteBase}`, functionName);
+    }
+  } catch (error) {
+    const message = `${LogMessage.ERROR.FTPFAIL}\n${error}`;
+    setLog(LogLevel.ERROR, message, functionName);
+    throw error;
+  } finally {
+    client.close();
+  }
+};
+
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {

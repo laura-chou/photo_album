@@ -4,6 +4,7 @@ import { Types } from "mongoose";
 import { responseHandler } from "../common/response";
 import { setFunctionName } from "../common/utils";
 import { getUserAlbumPipeline } from "../core/db";
+import { deleteFromFTP } from "../core/file-upload";
 import { LogLevel, LogMessage, setLog } from "../core/logger";
 import Album from "../models/album.model";
 import User from "../models/user.model";
@@ -92,6 +93,7 @@ export const updateFolder = setFunctionName(
             }
           });
       } else if (action === FolderAction.Delete) {
+        await deleteFromFTP(folderId);
         await Album.updateOne(
           {
             "folder._id": new Types.ObjectId(folderId)
