@@ -1,9 +1,9 @@
-import { defineStore } from 'pinia'
-import axios from 'axios'
+import { defineStore } from "pinia";
+import axios from "axios";
 
-axios.defaults.withCredentials = true
+axios.defaults.withCredentials = true;
 
-export const useStore = defineStore('photo-album', {
+export const useStore = defineStore("photo-album", {
   state: () => ({
     isLoading: false,
     captcha: {},
@@ -11,7 +11,7 @@ export const useStore = defineStore('photo-album', {
   getters: {},
   actions: {
     async handleLoading() {
-      this.isLoading = true
+      this.isLoading = true;
       // const url = `${import.meta.env.VITE_APIURL}/user/captcha`
       // try {
       //   await axios.get(url)
@@ -27,4 +27,4 @@ export const useStore = defineStore('photo-album', {
     },
   },
   persist: true,
-})
+});

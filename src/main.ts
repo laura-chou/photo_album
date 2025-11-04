@@ -1,24 +1,30 @@
-import { createApp } from 'vue'
-import { createPinia } from 'pinia'
+import { createApp } from "vue";
+import { createPinia } from "pinia";
 
-import App from './App.vue'
-import router from './router'
+import App from "./App.vue";
+import router from "./router";
 
-import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
-import VueFeather from 'vue-feather'
+import piniaPluginPersistedstate from "pinia-plugin-persistedstate";
+import VueFeather from "vue-feather";
 
-import 'bootstrap'
-import 'bootstrap/dist/css/bootstrap.min.css'
-import '@/styles/common.scss'
+import "css-doodle";
+import "bootstrap";
+import "bootstrap/dist/css/bootstrap.min.css";
+import "@/styles/common.scss";
 
-const pinia = createPinia()
-pinia.use(piniaPluginPersistedstate)
+import Navbar from "@/components/Navbar.vue";
+import CssDoodle from "@/components/CssDoodle.vue";
 
-const app = createApp(App)
+const pinia = createPinia();
+pinia.use(piniaPluginPersistedstate);
 
-app.component('VueFeather', VueFeather)
+const app = createApp(App);
 
-app.use(pinia)
-app.use(router)
+app.component("VueFeather", VueFeather);
+app.component("PhotoNavbar", Navbar);
+app.component("CssDoodle", CssDoodle);
 
-app.mount('#app')
+app.use(pinia);
+app.use(router);
+
+app.mount("#app");
