@@ -11,6 +11,57 @@ html {
 }
 
 .bg-midnight {
-  // background-color: #172b4d;
   background: radial-gradient(circle at 50% 30%, #0a1f44, #000814);
+}
+
+.card-base {
+  background-color: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(12px);
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(255, 255, 255, 0.1);
+  color: #eee;
+  height: 250px;
+  width: 320px;
+}
+
+.input-base {
+  background-color: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  backdrop-filter: blur(4px);
+  transition: border-color 0.3s;
+
+  &::placeholder {
+    color: #575757;
+  }
+
+  &:focus {
+    border-color: #d33;
+  }
+}
+
+.btn-red {
+  background-color: #d33;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  box-shadow: 0 0 8px rgba(255, 80, 80, 0.4);
+  border-radius: 12px;
+  padding: 0.6rem 1.2rem;
+  font-size: 1rem;
+  transition: background-color 0.3s;
+
+  &:hover {
+    background-color: #b00;
+  }
+}
+
+.card-body-flex {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-around;
+  height: 100%;
 }
