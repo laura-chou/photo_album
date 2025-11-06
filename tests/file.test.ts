@@ -65,9 +65,9 @@ describe("File API", () => {
     );
 
     describe("Success Cases", () => {
-      test("should send local image if UPLOAD_FTP is false and file exists", async() => {
+      test("should send local image if PRD_ENV is false and file exists", async() => {
         mockUserFindOne();
-        process.env.UPLOAD_FTP = "false";
+        process.env.PRD_ENV = "false";
         (fsPromises.access as jest.Mock).mockResolvedValue(undefined);
         spyOnSendFile();
 
@@ -82,9 +82,9 @@ describe("File API", () => {
         expect(fsPromises.access).toHaveBeenCalledWith(expectedPath);
       });
 
-      test("should redirect to FTP URL if UPLOAD_FTP is true", async() => {
+      test("should redirect to FTP URL if PRD_ENV is true", async() => {
         mockUserFindOne();
-        process.env.UPLOAD_FTP = "true";
+        process.env.PRD_ENV = "true";
 
         const response = await createRequest.get(
           route,
@@ -100,7 +100,7 @@ describe("File API", () => {
     describe("Client Error Cases", () => {
       test("should return 404 if local image does not exist", async() => {
         mockUserFindOne();
-        process.env.UPLOAD_FTP = "false";
+        process.env.PRD_ENV = "false";
         (fsPromises.access as jest.Mock).mockRejectedValue(new Error("not found"));
 
         const response = await createRequest.get(
@@ -128,7 +128,7 @@ describe("File API", () => {
 
         const response = await request(app)
           .post(ROUTE.UPLOAD)
-          .set("Authorization", `Bearer ${token}`)
+          .set("Cookie", [`token=${token}`])
           .attach("file", path.join(__dirname, "files/test.txt"));
 
         expectResponse.badRequest(response, RESPONSE_MESSAGE.LIMIT_FORMAT);
@@ -139,7 +139,7 @@ describe("File API", () => {
 
         const response = await request(app)
           .post(ROUTE.UPLOAD)
-          .set("Authorization", `Bearer ${token}`)
+          .set("Cookie", [`token=${token}`])
           .attach("file", path.join(__dirname, "files/1mb.png"));
 
         expectResponse.payloadTooLarge(response);
@@ -153,7 +153,7 @@ describe("File API", () => {
 
         const response = await request(app)
           .post(ROUTE.UPLOAD)
-          .set("Authorization", `Bearer ${token}`)
+          .set("Cookie", [`token=${token}`])
           .field("folderId", "507f1f77bcf86cd799439011")
           .attach("file", path.join(__dirname, "files/19kb.png"));
 
@@ -165,7 +165,7 @@ describe("File API", () => {
       const uploadRequest = (): supertest.Test =>
         supertest(app)
           .post(ROUTE.UPLOAD)
-          .set("Authorization", `Bearer ${token}`);
+          .set("Cookie", [`token=${token}`]);
 
       beforeEach(() => {
         mockUserFindOne();
@@ -233,7 +233,7 @@ describe("File API", () => {
 
         const response = await request(app)
           .post(ROUTE.UPLOAD)
-          .set("Authorization", `Bearer ${token}`)
+          .set("Cookie", [`token=${token}`])
           .field("folderId", "507f1f77bcf86cd799439011")
           .attach("file", path.join(__dirname, "files/19kb.png"));
 
@@ -245,7 +245,7 @@ describe("File API", () => {
 const uploadRequest = (): supertest.Test =>
         supertest(app)
           .post(ROUTE.UPLOAD)
-          .set("Authorization", `Bearer ${token}`)
+          .set("Cookie", [`token=${token}`])
           .field("folderId", "507f1f77bcf86cd799439011")
           .attach("file", Buffer.from("test"), "19kb.png");
 

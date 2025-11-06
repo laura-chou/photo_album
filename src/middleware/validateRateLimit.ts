@@ -15,7 +15,7 @@ const validateRateLimit = (
   const lastRequest = ipTracker.get(ip);
   const now = Date.now();
 
-  if (lastRequest && now - lastRequest < 60000) {
+  if (lastRequest && now - lastRequest < 30000) {
     setLog(LogLevel.ERROR, LogMessage.ERROR.TOOMANYREQUESTS, validateRateLimit.name);
     responseHandler.tooManyRequests(response);
     return;

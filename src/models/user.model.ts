@@ -1,5 +1,3 @@
-import "dotenv/config";
-
 import { Model, model, Schema } from "mongoose";
 
 import { RESPONSE_MESSAGE } from "../common/constants";

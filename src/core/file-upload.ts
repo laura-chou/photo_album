@@ -20,7 +20,7 @@ export const uploadToFTP = async(
   const client = new Client();
   const functionName = "uploadToFTP";
 
-  if (!convertToBool(process.env.UPLOAD_FTP)) {
+  if (!convertToBool(process.env.PRD_ENV)) {
     const fullPath = path.join(defaultPath, folderId);
     if (!fs.existsSync(fullPath)) {
       fs.mkdirSync(fullPath, { recursive: true });
@@ -65,7 +65,7 @@ export const deleteFromFTP = async(
   const client = new Client();
   const functionName = "deleteFromFTP";
 
-  if (!convertToBool(process.env.UPLOAD_FTP)) {
+  if (!convertToBool(process.env.PRD_ENV)) {
     const targetPath = filename
       ? path.join(defaultPath, folderId, filename)
       : path.join(defaultPath, folderId);

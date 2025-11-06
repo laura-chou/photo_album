@@ -19,7 +19,7 @@ export const readPhoto = setFunctionName(
     const folderId = request.params.folderId;
     const fileName = request.params.fileName;
 
-    if (!convertToBool(process.env.UPLOAD_FTP)) {
+    if (!convertToBool(process.env.PRD_ENV)) {
       const localPath = path.join(process.cwd(), "photo-album", folderId, fileName);
       try {
         await fs.access(localPath);

@@ -57,6 +57,10 @@ export const convertToBool = (value: string | undefined): boolean => {
   return value.toLowerCase() === "true" || value === "1";
 };
 
+export const isProductionEnv = (): boolean => {
+  return convertToBool(process.env.PRD_ENV);
+};
+
 export const setFunctionName = <T extends (
   request: Request,
   response: Response,
