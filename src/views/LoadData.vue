@@ -6,7 +6,7 @@ import { useRouter } from "vue-router";
 import { useAlert } from "@/composables/useAlert";
 import { useErrorRedirect } from "@/composables/useErrorRedirect";
 const { handleError } = useErrorRedirect();
-const { alertMessage, showAlert, triggerAlert } = useAlert();
+const { alerts, triggerAlert } = useAlert();
 const router = useRouter();
 const store = useStore();
 
@@ -36,7 +36,12 @@ onMounted(async () => {
 
 <template>
   <div class="loading">
-    <AlertMessage v-if="showAlert" :message="alertMessage" />
+    <AlertMessage
+      v-for="alert in alerts"
+      :key="alert.id"
+      :message="alert.message"
+      :type="alert.type"
+    />
     <img src="@/assets/loading.svg" />
   </div>
 </template>

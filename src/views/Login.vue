@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import axios from "axios";
 import { ref } from "vue";
-import { useStore } from "@/stores";
 import { useAlert } from "@/composables/useAlert";
 import { useErrorRedirect } from "@/composables/useErrorRedirect";
+import { useFormValidator } from "@/composables/useFormValidator";
+import { useAuth } from "@/composables/useUserAuth";
 const { handleError } = useErrorRedirect();
-const { alertMessage, showAlert, triggerAlert } = useAlert();
-const store = useStore();
+const { alerts, triggerAlert } = useAlert();
+const { validateRequired, errorMessage } = useFormValidator();
+const { login } = useAuth();
 
 defineOptions({
   name: "LoginPage",
@@ -15,14 +17,19 @@ defineOptions({
 const account = ref("");
 const password = ref("");
 
-const login = async () => {
-  if (account.value.trim().length === 0 || password.value.trim().length === 0) {
-    triggerAlert("請輸入帳號及密碼");
+const handleLogin = async () => {
+  const fields = {
+    帳號: account.value,
+    密碼: password.value,
+  };
+
+  if (!validateRequired(fields)) {
+    triggerAlert(errorMessage.value);
     return;
   }
 
   try {
-    await store.handleLogin(account.value, password.value);
+    await login(account.value, password.value);
     console.log("登入成功");
   } catch (error) {
     if (axios.isAxiosError(error)) {
@@ -33,6 +40,7 @@ const login = async () => {
           break;
         default:
           handleError(error, "handleLogin", status);
+          break;
       }
     } else {
       handleError(error, "handleLogin");
@@ -44,7 +52,12 @@ const login = async () => {
   <PhotoNavbar />
   <CssDoodle />
   <div class="h-100 d-flex align-items-center justify-content-center">
-    <AlertMessage v-if="showAlert" :message="alertMessage" />
+    <AlertMessage
+      v-for="alert in alerts"
+      :key="alert.id"
+      :message="alert.message"
+      :type="alert.type"
+    />
     <div class="card card-base">
       <div class="card-body card-body-flex">
         <div class="input-group">
@@ -69,7 +82,7 @@ const login = async () => {
             v-model="password"
           />
         </div>
-        <button type="button" class="btn btn-red" @click="login">登入</button>
+        <button type="button" class="btn btn-red" @click="handleLogin">登入</button>
       </div>
     </div>
   </div>

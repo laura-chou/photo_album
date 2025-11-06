@@ -1,20 +1,27 @@
-import { ref } from "vue";
+import { reactive } from "vue";
 
-export function useAlert() {
-  const alertMessage = ref("");
-  const showAlert = ref(false);
+interface AlertItem {
+  id: number;
+  message: string;
+  type: "success" | "error";
+}
 
-  function triggerAlert(message: string, duration = 2000) {
-    alertMessage.value = message;
-    showAlert.value = true;
+export const useAlert = () => {
+  const alerts = reactive<AlertItem[]>([]);
+  let nextId = 1;
+
+  const triggerAlert = (message: string, type: "success" | "error" = "error", duration = 1000) => {
+    const id = nextId++;
+    alerts.push({ id, message, type });
+
     setTimeout(() => {
-      showAlert.value = false;
+      const index = alerts.findIndex((a) => a.id === id);
+      if (index !== -1) alerts.splice(index, 1);
     }, duration);
-  }
+  };
 
   return {
-    alertMessage,
-    showAlert,
+    alerts,
     triggerAlert,
   };
-}
+};

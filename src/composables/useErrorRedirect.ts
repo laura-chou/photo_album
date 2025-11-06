@@ -1,9 +1,9 @@
 import { useRouter } from "vue-router";
 
-export function useErrorRedirect() {
+export const useErrorRedirect = () => {
   const router = useRouter();
 
-  function handleError(error: unknown, context?: string, status?: number) {
+  const handleError = (error: unknown, context?: string, status?: number) => {
     const source = context ?? "UnknownFunction";
 
     if (status) {
@@ -15,7 +15,7 @@ export function useErrorRedirect() {
     setTimeout(() => {
       router.push("/error");
     }, 100);
-  }
+  };
 
   return { handleError };
-}
+};

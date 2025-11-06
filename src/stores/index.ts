@@ -7,12 +7,13 @@ export const useStore = defineStore("photo-album", {
   state: () => ({
     isLoading: false,
     captcha: {
+      captchaId: "",
       svg: "",
     },
-    token: "",
   }),
   getters: {
     captchaSvg: (state) => state.captcha.svg,
+    captchaId: (state) => state.captcha.captchaId,
   },
   actions: {
     async handleLoading() {
@@ -25,19 +26,6 @@ export const useStore = defineStore("photo-album", {
         throw error;
       } finally {
         this.isLoading = false;
-      }
-    },
-    async handleLogin(account: string, password: string) {
-      const url = `${import.meta.env.VITE_APIURL}/user/login`;
-
-      try {
-        const response = await axios.post(url, {
-          account,
-          password,
-        });
-        this.token = response.data.data.token;
-      } catch (error) {
-        throw error;
       }
     },
   },
