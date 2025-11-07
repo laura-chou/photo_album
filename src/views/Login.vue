@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import axios from "axios";
 import { ref } from "vue";
+import { useRouter } from "vue-router";
 import { useAlert } from "@/composables/useAlert";
 import { useErrorRedirect } from "@/composables/useErrorRedirect";
 import { useFormValidator } from "@/composables/useFormValidator";
@@ -14,6 +15,7 @@ defineOptions({
   name: "LoginPage",
 });
 
+const router = useRouter();
 const account = ref("");
 const password = ref("");
 
@@ -30,7 +32,7 @@ const handleLogin = async () => {
 
   try {
     await login(account.value, password.value);
-    console.log("登入成功");
+    router.push("/album");
   } catch (error) {
     if (axios.isAxiosError(error)) {
       const status = error.response?.status;

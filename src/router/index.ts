@@ -3,6 +3,7 @@ import type { RouteRecordRaw } from "vue-router";
 import LoadData from "@/views/LoadData.vue";
 import NotFound from "@/views/NotFound.vue";
 import Login from "@/views/Login.vue";
+import Album from "@/views/Album.vue";
 import Register from "@/views/Register.vue";
 import ServerError from "@/views/ServerError.vue";
 
@@ -18,6 +19,10 @@ const routes: RouteRecordRaw[] = [
   {
     path: "/register",
     component: Register,
+  },
+  {
+    path: "/album",
+    component: Album,
   },
   {
     path: "/error",

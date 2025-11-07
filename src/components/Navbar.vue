@@ -9,10 +9,11 @@ import { computed } from "vue";
 const route = useRoute();
 
 const isLoginActive = computed(() => route.path.includes("login"));
+const props = withDefaults(defineProps<{ isLoggedIn?: boolean }>(), { isLoggedIn: false });
 </script>
 
 <template>
-  <nav class="navbar navbar-expand-lg navbar-dark bg-midnight">
+  <nav v-if="!props.isLoggedIn" class="navbar navbar-expand-lg navbar-dark bg-midnight">
     <div class="container-fluid">
       <a class="navbar-brand d-flex align-items-center" href="javascript:void(0)">
         <img class="d-inline-block me-2" src="@/assets/logo.png" height="25" />
@@ -45,6 +46,14 @@ const isLoginActive = computed(() => route.path.includes("login"));
           </li>
         </ul>
       </div>
+    </div>
+  </nav>
+  <nav v-else class="navbar navbar-expand-lg navbar-dark bg-midnight">
+    <div class="container-fluid">
+      <a class="navbar-brand d-flex align-items-center" href="javascript:void(0)">
+        <img class="d-inline-block me-2" src="@/assets/logo.png" height="25" />
+        <span class="fw-bold">線上相簿</span>
+      </a>
     </div>
   </nav>
 </template>

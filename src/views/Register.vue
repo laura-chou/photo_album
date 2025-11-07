@@ -41,12 +41,17 @@ const handleRegister = async () => {
   try {
     await register(account.value, password.value, captcha.value);
     triggerAlert("註冊成功", "success");
+    account.value = "";
+    password.value = "";
+    captcha.value = "";
   } catch (error) {
     if (axios.isAxiosError(error)) {
       const status = error.response?.status;
+      const data = error.response?.data.data;
       switch (status) {
         case 400:
           triggerAlert("驗證碼錯誤");
+          if (data) store.captcha = data;
           break;
         case 409:
           triggerAlert("使用者已註冊");
