@@ -1,14 +1,14 @@
 import svgCaptcha from "svg-captcha";
 import { v4 as uuidv4 } from "uuid";
 
-import { HTTP_STATUS } from "../src/common/constants";
+import { HTTP_STATUS, RESPONSE_MESSAGE } from "../src/common/constants";
 import * as utils from "../src/common/utils";
 import { setCaptcha } from "../src/core/captcha";
 import User from "../src/models/user.model";
 
 import { describeServerErrorTests, describeValidationErrorTests } from "./fixtures/testStructures";
 import { createRequest, expectResponse, mockUserFindOne } from "./fixtures/testUtils";
-import { ROUTE, MOCK_USER_INFO, MOCK_REGISTER_EXIST_USER, MOCK_REGISTER_NOTEXIST_USER, MOCK_LOGIN_NOTEXIST_USER, MOCK_LOGIN_EXIST_USER } from "./fixtures/userTestConfig";
+import { ROUTE, MOCK_USER_INFO, MOCK_REGISTER_EXIST_USER, MOCK_REGISTER_NOTEXIST_USER, MOCK_LOGIN_NOTEXIST_USER, MOCK_LOGIN_EXIST_USER, MOCK_CAPTCHA } from "./fixtures/userTestConfig";
 
 
 jest.mock("uuid", () => ({
@@ -22,8 +22,19 @@ jest.mock("../src/models/user.model", () => ({
   create: jest.fn()
 }));
 
+const mockUuid = (): void => {
+  (uuidv4 as jest.Mock).mockReturnValue("test-id");
+};
+
 const spyOnGetClientIp = (ip: string): void => {
   jest.spyOn(utils, "getClientIp").mockReturnValue(ip);
+};
+
+const spyOnSvgCaptchaCreate = (): void => {
+  jest.spyOn(svgCaptcha, "create").mockReturnValue({
+    text: "abcd",
+    data: "<svg>captcha</svg>",
+  });
 };
 
 describe("User API", () => {
@@ -36,11 +47,8 @@ describe("User API", () => {
     describe("Success Cases", () => {
       test("should return captcha svg and id when rate limit is not exceeded", async() => {
         spyOnGetClientIp("127.0.0.1");
-        jest.spyOn(svgCaptcha, "create").mockReturnValue({
-          text: "abcd",
-          data: "<svg>captcha</svg>",
-        });
-        (uuidv4 as jest.Mock).mockReturnValue("test-id");
+        spyOnSvgCaptchaCreate();
+        mockUuid();
 
         const response = await createRequest.get(
           ROUTE.CAPTCHA,
@@ -50,10 +58,7 @@ describe("User API", () => {
           }
         );
 
-        expectResponse.success(response, {
-          captchaId: "test-id",
-          svg: "<svg>captcha</svg>"
-        });
+        expectResponse.success(response, MOCK_CAPTCHA);
       });
     });
 
@@ -176,6 +181,8 @@ describe("User API", () => {
     describe("Success Cases", () => {
       test("should create user successfully", async() => {
         setCaptcha(MOCK_REGISTER_NOTEXIST_USER.captchaId, MOCK_REGISTER_NOTEXIST_USER.captchaText);
+        spyOnSvgCaptchaCreate();
+        mockUuid();
         mockUserFindOne(null);
 
         const response = await createRequest.post(
@@ -184,7 +191,7 @@ describe("User API", () => {
           HTTP_STATUS.CREATED
         );
 
-        expectResponse.created(response);
+        expectResponse.created(response, MOCK_CAPTCHA);
       });
     });
 
@@ -198,7 +205,20 @@ describe("User API", () => {
           HTTP_STATUS.BAD_REQUEST
         );
 
-        expectResponse.badRequest(response, "Captcha is incorrect.");
+        expectResponse.badRequest(response, RESPONSE_MESSAGE.INVALID_CAPTCHA);
+      });
+
+      test("should bad request for expired captcha", async() => {
+        setCaptcha(MOCK_REGISTER_NOTEXIST_USER.captchaId, "captcha", 1);
+        spyOnSvgCaptchaCreate();
+        mockUuid();
+        const response = await createRequest.post(
+          ROUTE.CREATE,
+          MOCK_REGISTER_NOTEXIST_USER,
+          HTTP_STATUS.BAD_REQUEST
+        );
+
+        expectResponse.badRequest(response, RESPONSE_MESSAGE.EXPIRED_CAPTCHA, MOCK_CAPTCHA);
       });
     });
 

@@ -242,7 +242,7 @@ describe("File API", () => {
     });
 
     describe("Server Error Cases", () => {
-const uploadRequest = (): supertest.Test =>
+      const uploadRequest = (): supertest.Test =>
         supertest(app)
           .post(ROUTE.UPLOAD)
           .set("Cookie", [`token=${token}`])

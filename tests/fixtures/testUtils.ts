@@ -152,22 +152,23 @@ export const createRequest = {
 };
 
 export const expectResponse = {
-  success: (response: Response, data: string | object): void => {
+  success: (response: Response, data?: string | object): void => {
     if (isTypeString(data)) {
       expect(response.text).toBe(data);
     } else {
       expect(response.body).toEqual({
         status: HTTP_STATUS.OK,
         message: RESPONSE_MESSAGE.SUCCESS,
-        data: data
+        data
       });
     }
   },
 
-  created: (response: Response): void => {
+  created: (response: Response, data?: string | object): void => {
     expect(response.body).toEqual({
       status: HTTP_STATUS.CREATED,
-      message: RESPONSE_MESSAGE.SUCCESS
+      message: RESPONSE_MESSAGE.SUCCESS,
+      data
     });
   },
 
@@ -178,10 +179,11 @@ export const expectResponse = {
     });
   },
 
-  badRequest: (response: Response, message: string): void => {
+  badRequest: (response: Response, message: string, data?: string | object): void => {
     expect(response.body).toEqual({
       status: HTTP_STATUS.BAD_REQUEST,
-      message: message
+      message,
+      data
     });
   },
 

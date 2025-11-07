@@ -18,12 +18,23 @@ type RegisterRequest = {
   captchaText: string;
 }
 
+interface CaptchaInfo {
+  captchaId: string;
+  svg: string;
+}
+
+
 interface UserAuthInfo {
   _id: string;
   userName: string;
   password: string;
   token: string;
 }
+
+export const MOCK_CAPTCHA: CaptchaInfo = {
+  captchaId: "test-id",
+  svg: "<svg>captcha</svg>"
+};
 
 export const MOCK_USER_INFO: UserAuthInfo = { 
   _id: "abc123",

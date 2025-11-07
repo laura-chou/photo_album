@@ -21,7 +21,9 @@ app.use(morgan(":apiPath", {
   immediate: true,
   stream: {
     write: (message: string) => {
-      setLog(LogLevel.HTTP, message.trim());
+      if (!message.includes("OPTIONS")) {
+        setLog(LogLevel.HTTP, message.trim());
+      }
     }
   }
 }));

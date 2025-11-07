@@ -4,6 +4,20 @@ import { LogMessage } from "../core/logger";
 
 import { HTTP_STATUS, RESPONSE_MESSAGE } from "./constants";
 
+const MESSAGE_MAP = {
+  CONTENT_TYPE: RESPONSE_MESSAGE.INVALID_CONTENT_TYPE,
+  JSON_KEY: RESPONSE_MESSAGE.INVALID_JSON_KEY,
+  JSON_FORMAT: RESPONSE_MESSAGE.INVALID_JSON_FORMAT,
+  INVALID_ID: RESPONSE_MESSAGE.INVALID_ID,
+  INVALID_CAPTCHA: RESPONSE_MESSAGE.INVALID_CAPTCHA,
+  EXPIRED_CAPTCHA: RESPONSE_MESSAGE.EXPIRED_CAPTCHA,
+  UPLOAD_LIMIT: RESPONSE_MESSAGE.UPLOAD_LIMIT,
+  NO_FILE: RESPONSE_MESSAGE.NO_FILE,
+  LIMIT_FORMAT: RESPONSE_MESSAGE.LIMIT_FORMAT,
+} as const;
+
+type BadRequestType = keyof typeof MESSAGE_MAP;
+
 interface ApiResponse<T> {
   status: number
   message: string
@@ -34,33 +48,22 @@ export const responseHandler = {
     );
   },
 
-  created(res: Response): void {
+  created<T>(res: Response, data?: T): void {
     sendResponse(
       res, 
       HTTP_STATUS.CREATED, 
-      RESPONSE_MESSAGE.SUCCESS
+      RESPONSE_MESSAGE.SUCCESS,
+      data
     );
   },
 
-  badRequest(
-    res: Response,
-    type: "CONTENT_TYPE" | "JSON_KEY" | "JSON_FORMAT" | "INVALID_ID" | "INVALID_CAPTCHA" | "UPLOAD_LIMIT" | "NO_FILE" | "LIMIT_FORMAT"
-  ): void {
-    const messageMap = {
-      CONTENT_TYPE: RESPONSE_MESSAGE.INVALID_CONTENT_TYPE,
-      JSON_KEY: RESPONSE_MESSAGE.INVALID_JSON_KEY,
-      JSON_FORMAT: RESPONSE_MESSAGE.INVALID_JSON_FORMAT,
-      INVALID_ID: RESPONSE_MESSAGE.INVALID_ID,
-      INVALID_CAPTCHA: RESPONSE_MESSAGE.INVALID_CAPTCHA,
-      UPLOAD_LIMIT: RESPONSE_MESSAGE.UPLOAD_LIMIT,
-      NO_FILE: RESPONSE_MESSAGE.NO_FILE,
-      LIMIT_FORMAT: RESPONSE_MESSAGE.LIMIT_FORMAT
-    };
-
+  badRequest<T>(res: Response, type: BadRequestType, data?: T): void
+  {
     sendResponse(
       res, 
       HTTP_STATUS.BAD_REQUEST, 
-      messageMap[type]
+      MESSAGE_MAP[type],
+      data
     );
   },
 

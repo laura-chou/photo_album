@@ -3,23 +3,10 @@ import { Request, Response, NextFunction } from "express";
 import { RESPONSE_MESSAGE } from "../common/constants";
 import { responseHandler } from "../common/response";
 import { isNullOrEmpty, isTypeString } from "../common/utils";
-import { getCaptcha } from "../core/captcha";
+import { CaptchaVerificationResult, createCaptcha, verifyCaptcha } from "../core/captcha";
 import { LogLevel, setLog } from "../core/logger";
 
 const functionName = "validateRegisterRequest";
-
-const verifyCaptcha = (
-  captchaId: string,
-  captchaText: string
-): boolean => {
-  const storedText = getCaptcha(captchaId);
-
-  if (!storedText) {
-    return false;
-  }
-
-  return storedText.toLowerCase() === captchaText.toLowerCase();
-};
 
 const validateRegisterRequest = (
   request: Request,
@@ -56,11 +43,17 @@ const validateRegisterRequest = (
     responseHandler.badRequest(response, "JSON_FORMAT");
     return;
   }
-
-  if (!verifyCaptcha(captchaId, captchaText)) {
-    setLog(LogLevel.ERROR, RESPONSE_MESSAGE.INVALID_CAPTCHA, functionName);
-    responseHandler.badRequest(response, "INVALID_CAPTCHA");
-    return;
+  const verifyResult = verifyCaptcha(captchaId, captchaText);
+  switch (verifyResult) {
+    case CaptchaVerificationResult.EXPIRED:
+    case CaptchaVerificationResult.NOT_FOUND:
+      setLog(LogLevel.ERROR, RESPONSE_MESSAGE.EXPIRED_CAPTCHA, functionName);
+      responseHandler.badRequest(response, "EXPIRED_CAPTCHA", createCaptcha());
+      return;
+    case CaptchaVerificationResult.MISMATCH:
+      setLog(LogLevel.ERROR, RESPONSE_MESSAGE.INVALID_CAPTCHA, functionName);
+      responseHandler.badRequest(response, "INVALID_CAPTCHA");
+      return;
   }
 
   next();

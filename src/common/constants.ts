@@ -38,6 +38,7 @@ export const RESPONSE_MESSAGE = {
   DATA_ALREADY_EXISTS: "This record already exists.",
   TOO_MANY_REQUESTS: "Too many requests. Please wait a moment.",
   INVALID_CAPTCHA: "Captcha is incorrect.",
+  EXPIRED_CAPTCHA: "Captcha has expired.",
   UPLOAD_LIMIT: "File upload limit exceeded (max 3 files).",
   NO_FILE: "No file upload.",
   LIMIT_FILE_SIZE: "File size exceeds the limit. Please upload a file smaller than 1MB.",
