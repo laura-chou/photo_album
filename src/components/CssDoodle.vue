@@ -13,9 +13,11 @@ const props = withDefaults(defineProps<{ isLoggedIn?: boolean }>(), { isLoggedIn
   </css-doodle>
   <css-doodle v-else>
     :doodle { @grid: 10x6 / 100vmax / #d8dde5; overflow: hidden; } @shape: circle; @size: @r(0.4em,
-    1em); background: hsla( @r(0, 360), @r(30%, 60%), @r(75%, 90%), @r(.4, .8) ); transform:
-    translate(@r(-60px, 60px), @r(-60px, 60px)) scale(@r(.5, 1.2)) rotate(@r(-30deg, 30deg));
-    opacity: @r(.3, .8);
+    1em); background: hsla(@r(0, 360), @r(30%, 60%), @r(75%, 90%), @r(.4, .8)); transform:
+    translate(@r(-60px, 60px), @r(-60px, 60px)) scale(@r(.5, 1.2)); opacity: @r(.5, 1); animation:
+    float @r(4s, 10s) ease-in-out infinite alternate; @keyframes float { 0% { transform:
+    translate(@r(-60px, 60px), @r(-60px, 60px)) rotate(0deg); } 100% { transform:
+    translate(@r(-60px, 60px), @r(-60px, 60px)) rotate(360deg); } }
   </css-doodle>
 </template>
 

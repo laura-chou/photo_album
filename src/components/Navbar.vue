@@ -8,12 +8,12 @@ import { computed } from "vue";
 
 const route = useRoute();
 
-const isLoginActive = computed(() => route.path.includes("login"));
+const isActive = computed(() => ["login", "album"].some((segment) => route.path.includes(segment)));
 const props = withDefaults(defineProps<{ isLoggedIn?: boolean }>(), { isLoggedIn: false });
 </script>
 
 <template>
-  <nav v-if="!props.isLoggedIn" class="navbar navbar-expand-lg navbar-dark bg-midnight">
+  <nav class="navbar navbar-expand-lg navbar-dark bg-midnight">
     <div class="container-fluid">
       <a class="navbar-brand d-flex align-items-center" href="javascript:void(0)">
         <img class="d-inline-block me-2" src="@/assets/logo.png" height="25" />
@@ -31,29 +31,27 @@ const props = withDefaults(defineProps<{ isLoggedIn?: boolean }>(), { isLoggedIn
         <span class="navbar-toggler-icon"></span>
       </button>
       <div class="collapse navbar-collapse flex-grow-0" id="navbar">
-        <ul class="navbar-nav me-auto mb-2 mb-lg-0 text-center fw-bold">
+        <ul v-if="!props.isLoggedIn" class="navbar-nav me-auto mb-2 mb-lg-0 text-center fw-bold">
           <li class="nav-item">
-            <a
-              class="nav-link"
-              :class="{ active: isLoginActive }"
-              aria-current="page"
-              href="./login"
+            <a class="nav-link" :class="{ active: isActive }" aria-current="page" href="./login"
               >登入</a
             >
           </li>
           <li class="nav-item">
-            <a class="nav-link" :class="{ active: !isLoginActive }" href="./register">註冊</a>
+            <a class="nav-link" :class="{ active: !isActive }" href="./register">註冊</a>
+          </li>
+        </ul>
+        <ul v-else class="navbar-nav me-auto mb-2 mb-lg-0 text-center fw-bold">
+          <li class="nav-item">
+            <a class="nav-link" :class="{ active: isActive }" aria-current="page" href="./album"
+              >相簿</a
+            >
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" :class="{ active: !isActive }" href="./setting">設定</a>
           </li>
         </ul>
       </div>
-    </div>
-  </nav>
-  <nav v-else class="navbar navbar-expand-lg navbar-dark bg-midnight">
-    <div class="container-fluid">
-      <a class="navbar-brand d-flex align-items-center" href="javascript:void(0)">
-        <img class="d-inline-block me-2" src="@/assets/logo.png" height="25" />
-        <span class="fw-bold">線上相簿</span>
-      </a>
     </div>
   </nav>
 </template>
