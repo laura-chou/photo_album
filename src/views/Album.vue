@@ -36,18 +36,21 @@ const handleFolder = (folderName: string, files: FileItem[]) => {
 </script>
 
 <template>
-  <PhotoNavbar :isLoggedIn="true" />
-  <CssDoodle :isLoggedIn="true" />
-  <nav class="navbar navbar-light bg-light">
-    <div class="d-flex align-items-center">
-      <ol class="breadcrumb m-0 ms-4">
-        <li class="breadcrumb-item"><a href="javascript:void(0)" @click="previous">資料夾</a></li>
-        <li v-if="breadcrumbName" class="breadcrumb-item active">
-          {{ breadcrumbName }}
-        </li>
-      </ol>
-    </div>
-  </nav>
+  <div style="height: 97px">
+    <PhotoNavbar :isLoggedIn="true" />
+    <CssDoodle :isLoggedIn="true" />
+    <nav class="navbar navbar-light bg-light">
+      <div class="d-flex align-items-center">
+        <ol class="breadcrumb m-0 ms-4">
+          <li class="breadcrumb-item"><a href="javascript:void(0)" @click="previous">資料夾</a></li>
+          <li v-if="breadcrumbName" class="breadcrumb-item active">
+            {{ breadcrumbName }}
+          </li>
+        </ol>
+      </div>
+    </nav>
+  </div>
+
   <div v-if="selectedFolder" class="h-100">
     <VueSwiper
       class="swiper"
@@ -62,7 +65,7 @@ const handleFolder = (folderName: string, files: FileItem[]) => {
       </SwiperSlide>
     </VueSwiper>
   </div>
-  <div v-else class="mt-3">
+  <div v-else class="m-3">
     <div class="row">
       <div class="col-2 folder" v-for="item in store.folder" :key="item._id">
         <button
@@ -100,7 +103,7 @@ const handleFolder = (folderName: string, files: FileItem[]) => {
 }
 
 .swiper {
-  height: 85%;
+  height: calc(100% - 97px);
 }
 
 .caption {

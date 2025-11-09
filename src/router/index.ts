@@ -5,6 +5,8 @@ import NotFound from "@/views/NotFound.vue";
 import Login from "@/views/Login.vue";
 import Album from "@/views/Album.vue";
 import Register from "@/views/Register.vue";
+import Setting from "@/views/Setting.vue";
+import SettingDetail from "@/views/SettingDetail.vue";
 import ServerError from "@/views/ServerError.vue";
 
 const routes: RouteRecordRaw[] = [
@@ -23,6 +25,14 @@ const routes: RouteRecordRaw[] = [
   {
     path: "/album",
     component: Album,
+  },
+  {
+    path: "/setting",
+    component: Setting,
+  },
+  {
+    path: "/edit/:id",
+    component: SettingDetail,
   },
   {
     path: "/error",
