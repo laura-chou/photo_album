@@ -1,21 +1,19 @@
 <script setup lang="ts">
 import axios from "axios";
 import { ref } from "vue";
-import { useStore } from "@/stores";
-import { useAuth } from "@/composables/useUserAuth";
+import { useUserStore } from "@/stores/user";
 import { useAlert } from "@/composables/useAlert";
 import { useErrorRedirect } from "@/composables/useErrorRedirect";
 import { useFormValidator } from "@/composables/useFormValidator";
 const { handleError } = useErrorRedirect();
 const { alerts, triggerAlert } = useAlert();
 const { validateRequired, validatePasswordLength, errorMessage } = useFormValidator();
-const { register } = useAuth();
 
 defineOptions({
   name: "RegisterPage",
 });
 
-const store = useStore();
+const userStore = useUserStore();
 
 const account = ref("");
 const password = ref("");
@@ -39,7 +37,7 @@ const handleRegister = async () => {
   }
 
   try {
-    await register(account.value, password.value, captcha.value);
+    await userStore.register(account.value, password.value, captcha.value);
     triggerAlert("註冊成功", "success");
     account.value = "";
     password.value = "";
@@ -51,7 +49,7 @@ const handleRegister = async () => {
       switch (status) {
         case 400:
           triggerAlert("驗證碼錯誤");
-          if (data) store.captcha = data;
+          if (data) userStore.captcha = data;
           break;
         case 409:
           triggerAlert("使用者已註冊");
@@ -108,7 +106,7 @@ const handleRegister = async () => {
             placeholder="驗證碼"
             v-model="captcha"
           />
-          <div id="svg" v-html="store.captchaSvg"></div>
+          <div id="svg" v-html="userStore.captchaSvg"></div>
         </div>
         <button type="button" class="btn btn-red" @click="handleRegister">註冊</button>
       </div>

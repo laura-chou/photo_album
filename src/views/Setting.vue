@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import { useStore } from "@/stores";
+import { useAlbumStore } from "@/stores/album";
 
 defineOptions({
   name: "SettingPage",
@@ -15,12 +15,12 @@ export interface FolderItem {
 }
 
 const router = useRouter();
-const store = useStore();
+const albumStore = useAlbumStore();
 const folders = ref<FolderItem[]>([]);
 const createFolderName = ref("");
 
 watch(
-  () => store.folder,
+  () => albumStore.folder,
   (newVal) => {
     folders.value = newVal.map((f) => ({
       ...f,
@@ -37,7 +37,7 @@ const goToDetail = (id: string) => {
 
 const deleteFolder = (folderId: string) => {
   if (confirm("確定要刪除嗎?")) {
-    store.deleteFolder(folderId);
+    albumStore.deleteFolder(folderId);
   }
 };
 
@@ -54,7 +54,7 @@ const saveEdit = (item: FolderItem) => {
   }
   item.name = item.tempName;
 
-  store.updateFolderName(item._id, item.name);
+  albumStore.updateFolderName(item._id, item.name);
 
   item.isEditing = false;
 };
@@ -69,7 +69,7 @@ const createFolder = () => {
     alert("請輸入名稱");
     return;
   }
-  store.createFolder(createFolderName.value);
+  albumStore.createFolder(createFolderName.value);
   createFolderName.value = "";
 };
 </script>

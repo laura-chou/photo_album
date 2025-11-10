@@ -2,20 +2,20 @@
 import axios from "axios";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
+import { useUserStore } from "@/stores/user";
 import { useAlert } from "@/composables/useAlert";
 import { useErrorRedirect } from "@/composables/useErrorRedirect";
 import { useFormValidator } from "@/composables/useFormValidator";
-import { useAuth } from "@/composables/useUserAuth";
 const { handleError } = useErrorRedirect();
 const { alerts, triggerAlert } = useAlert();
 const { validateRequired, errorMessage } = useFormValidator();
-const { login } = useAuth();
 
 defineOptions({
   name: "LoginPage",
 });
 
 const router = useRouter();
+const userSore = useUserStore();
 const account = ref("");
 const password = ref("");
 
@@ -31,7 +31,7 @@ const handleLogin = async () => {
   }
 
   try {
-    await login(account.value, password.value);
+    await userSore.login(account.value, password.value);
     router.push("/album");
   } catch (error) {
     if (axios.isAxiosError(error)) {

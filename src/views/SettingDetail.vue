@@ -2,7 +2,7 @@
 import { ref, onMounted } from "vue";
 import { useRoute } from "vue-router";
 import { useRouter } from "vue-router";
-import { useStore } from "@/stores";
+import { useAlbumStore } from "@/stores/album";
 interface FileItem {
   _id: string;
   customName: string;
@@ -10,12 +10,12 @@ interface FileItem {
 }
 const route = useRoute();
 const router = useRouter();
-const store = useStore();
+const alnumStore = useAlbumStore();
 const selectedFolder = ref<FileItem[] | null>(null);
 
 onMounted(async () => {
   const id = route.params.id;
-  const folder = store.folder.find((item) => item._id === id);
+  const folder = alnumStore.folder.find((item) => item._id === id);
   selectedFolder.value = folder ? folder.files : [];
 });
 

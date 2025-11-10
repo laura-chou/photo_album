@@ -1,18 +1,18 @@
 <script setup lang="ts">
 import axios from "axios";
 import { onMounted } from "vue";
-import { useStore } from "@/stores";
+import { useUserStore } from "@/stores/user";
 import { useRouter } from "vue-router";
 import { useAlert } from "@/composables/useAlert";
 import { useErrorRedirect } from "@/composables/useErrorRedirect";
 const { handleError } = useErrorRedirect();
 const { alerts, triggerAlert } = useAlert();
 const router = useRouter();
-const store = useStore();
+const userStore = useUserStore();
 
 onMounted(async () => {
   try {
-    await store.handleLoading();
+    await userStore.handleLoading();
     router.push("/login");
   } catch (error) {
     if (axios.isAxiosError(error)) {
