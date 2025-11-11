@@ -55,11 +55,11 @@ const handleRegister = async () => {
           triggerAlert("使用者已註冊");
           break;
         default:
-          handleError(error, "handleRegister", status);
+          handleError(error, "register", status);
           break;
       }
     } else {
-      handleError(error, "handleRegister");
+      handleError(error, "register");
     }
   }
 };

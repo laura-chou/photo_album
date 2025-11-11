@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
 import { useRouter } from "vue-router";
+import { Modal } from "bootstrap";
 import { useAlbumStore } from "@/stores/album";
+import { useErrorRedirect } from "@/composables/useErrorRedirect";
 
 defineOptions({
   name: "SettingPage",
@@ -16,6 +18,7 @@ export interface FolderItem {
 
 const router = useRouter();
 const albumStore = useAlbumStore();
+const { handleError } = useErrorRedirect();
 const folders = ref<FolderItem[]>([]);
 const createFolderName = ref("");
 
@@ -35,9 +38,13 @@ const goToDetail = (id: string) => {
   router.push(`/edit/${id}`);
 };
 
-const deleteFolder = (folderId: string) => {
+const deleteFolder = async (folderId: string) => {
   if (confirm("確定要刪除嗎?")) {
-    albumStore.deleteFolder(folderId);
+    try {
+      await albumStore.deleteFolder(folderId);
+    } catch (error) {
+      handleError(error, "saveEdit");
+    }
   }
 };
 
@@ -46,7 +53,7 @@ const startEdit = (item: FolderItem) => {
   item.tempName = item.name;
 };
 
-const saveEdit = (item: FolderItem) => {
+const saveEdit = async (item: FolderItem) => {
   if (!item.isEditing) return;
   if (!item.tempName?.trim()) {
     alert("請輸入名稱");
@@ -54,9 +61,12 @@ const saveEdit = (item: FolderItem) => {
   }
   item.name = item.tempName;
 
-  albumStore.updateFolderName(item._id, item.name);
-
-  item.isEditing = false;
+  try {
+    await albumStore.updateFolderName(item._id, item.name);
+    item.isEditing = false;
+  } catch (error) {
+    handleError(error, "saveEdit");
+  }
 };
 
 const cancelEdit = (item: FolderItem) => {
@@ -64,13 +74,29 @@ const cancelEdit = (item: FolderItem) => {
   item.tempName = item.name;
 };
 
-const createFolder = () => {
+const createFolder = async () => {
   if (!createFolderName.value.trim()) {
     alert("請輸入名稱");
     return;
   }
-  albumStore.createFolder(createFolderName.value);
-  createFolderName.value = "";
+
+  try {
+    await albumStore.createFolder(createFolderName.value);
+    createFolderName.value = "";
+    closeModal();
+  } catch (error) {
+    handleError(error, "createFolder");
+  }
+};
+
+const closeModal = () => {
+  const modalEl = document.getElementById("folderModal");
+  if (!modalEl) return;
+  if (document.activeElement instanceof HTMLElement) {
+    document.activeElement.blur();
+  }
+  const modalInstance = Modal.getInstance(modalEl) || new Modal(modalEl);
+  modalInstance.hide();
 };
 </script>
 
@@ -103,16 +129,16 @@ const createFolder = () => {
               <button
                 type="button"
                 class="btn-close"
-                data-bs-dismiss="modal"
                 aria-label="Close"
+                @click="closeModal"
               ></button>
               <input
                 class="form-control mt-3 mb-3"
                 placeholder="請輸入資料夾名稱"
                 v-model="createFolderName"
               />
-              <button type="button" class="btn btn-success btn-td" @click="createFolder">
-                <VueFeather type="save"></VueFeather>
+              <button type="button" class="btn btn-primary btn-td" @click="createFolder">
+                <VueFeather type="check"></VueFeather>
               </button>
             </div>
           </div>
@@ -138,8 +164,8 @@ const createFolder = () => {
           </td>
           <td>
             <template v-if="item.isEditing">
-              <button type="button" class="btn btn-primary btn-td" @click="saveEdit(item)">
-                <VueFeather type="check"></VueFeather>
+              <button type="button" class="btn btn-success btn-td" @click="saveEdit(item)">
+                <VueFeather type="save"></VueFeather>
               </button>
               <button type="button" class="btn btn-danger btn-td" @click="cancelEdit(item)">
                 <VueFeather type="x"></VueFeather>

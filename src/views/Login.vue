@@ -41,11 +41,11 @@ const handleLogin = async () => {
           triggerAlert("帳號或密碼錯誤");
           break;
         default:
-          handleError(error, "handleLogin", status);
+          handleError(error, "login", status);
           break;
       }
     } else {
-      handleError(error, "handleLogin");
+      handleError(error, "login");
     }
   }
 };

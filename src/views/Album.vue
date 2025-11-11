@@ -1,19 +1,27 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import { Pagination } from "swiper/modules";
 import { useAlbumStore } from "@/stores/album";
 import folderImage from "@/assets/folder.png";
 import emptyfolderImage from "@/assets/empty-folder.png";
 import type { FileItem } from "@/types/album";
+import { useFolderProcess } from "@/composables/useFolderProcess";
 
 defineOptions({
   name: "AlbumPage",
 });
 
 const albumStore = useAlbumStore();
+const { processFolders } = useFolderProcess();
+const swiperModules = [Pagination];
+
 const folderFiles = ref<FileItem[] | null>(null);
 const folderName = ref("");
-const swiperModules = [Pagination];
+
+onMounted(async () => {
+  const formattedFolders = await processFolders(albumStore.folder);
+  albumStore.setFolderList(formattedFolders);
+});
 
 const previous = () => {
   folderName.value = "";
@@ -62,7 +70,7 @@ const handleFolder = (name: string, files: FileItem[]) => {
   </div>
   <div v-else class="m-3">
     <div class="row">
-      <div class="col-2 folder" v-for="item in albumStore.folder" :key="item._id">
+      <div class="folder col-6 col-sm-3 col-lg-2" v-for="item in albumStore.folder" :key="item._id">
         <button
           type="button"
           class="btn btn-outline-secondary"

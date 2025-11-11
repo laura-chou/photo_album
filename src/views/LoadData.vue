@@ -25,10 +25,10 @@ onMounted(async () => {
           }, 2000);
           break;
         default:
-          handleError(error, "handleLoading", status);
+          handleError(error, "loading", status);
       }
     } else {
-      handleError(error, "handleLoading");
+      handleError(error, "loading");
     }
   }
 });

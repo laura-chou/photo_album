@@ -1,7 +1,6 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 import { useAlbumStore } from "./album";
-import type { Folder } from "@/types/album";
 import axios from "axios";
 
 axios.defaults.withCredentials = true;
@@ -42,23 +41,9 @@ export const useUserStore = defineStore(
 
     const login = async (account: string, password: string) => {
       try {
-        const result = await axios.post(
-          `${domain}/login`,
-          { account, password },
-          { withCredentials: true }
-        );
+        const result = await axios.post(`${domain}/login`, { account, password });
 
-        const list = result.data.data as Folder[];
-        const folderPromises = list.map(async (folder) => {
-          const filePromises = folder.files.map(async (file) => {
-            file.storeName = await albumStore.getImageSrc(folder._id, file.storeName);
-          });
-          await Promise.all(filePromises);
-          return folder;
-        });
-        const newData = await Promise.all(folderPromises);
-        console.log(newData);
-        albumStore.setFolderList(newData);
+        albumStore.setFolderList(result.data.data);
         userName.value = account;
       } catch (error) {
         throw error;
@@ -67,11 +52,12 @@ export const useUserStore = defineStore(
 
     const register = async (account: string, password: string, captchaText: string) => {
       try {
-        const response = await axios.post(
-          `${domain}/create`,
-          { account, password, captchaText: captchaText, captchaId: captchaId.value },
-          { withCredentials: true }
-        );
+        const response = await axios.post(`${domain}/create`, {
+          account,
+          password,
+          captchaText: captchaText,
+          captchaId: captchaId.value,
+        });
         captcha.value = response.data.data;
       } catch (error) {
         throw error;

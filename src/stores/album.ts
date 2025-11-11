@@ -6,7 +6,6 @@ import type { Folder } from "@/types/album";
 axios.defaults.withCredentials = true;
 
 const albumDomain = `${import.meta.env.VITE_APIURL}/album`;
-const fileDomain = `${import.meta.env.VITE_APIURL}/file`;
 
 export const useAlbumStore = defineStore(
   "album",
@@ -17,46 +16,52 @@ export const useAlbumStore = defineStore(
       folder.value = newList;
     };
 
-    const getImageSrc = async (id: string, fileName: string): Promise<string> => {
-      try {
-        const result = await axios.get(`${fileDomain}/${id}/${fileName}`, {
-          withCredentials: true,
-          responseType: "blob",
-        });
-        return URL.createObjectURL(result.data);
-      } catch (error) {
-        console.log(error);
-        return "@/assets/error-image.png";
-      }
-    };
-
     const updateFolderName = async (id: string, name: string) => {
-      const f = folder.value.find((item) => item._id === id);
-      if (f) {
-        f.name = name;
+      const folderData = folder.value.find((item) => item._id === id);
+      if (folderData) {
+        try {
+          await axios.patch(`${albumDomain}/${id}`, {
+            action: "rename",
+            folderName: name,
+          });
+          folderData.name = name;
+        } catch (error) {
+          throw error;
+        }
+      } else {
+        throw "folder data not found";
       }
     };
 
     const deleteFolder = async (id: string) => {
-      const index = folder.value.findIndex((item) => item._id === id);
-      if (index !== -1) {
-        folder.value.splice(index, 1);
+      try {
+        await axios.patch(`${albumDomain}/${id}`, {
+          action: "delete",
+        });
+        const index = folder.value.findIndex((item) => item._id === id);
+        if (index !== -1) {
+          folder.value.splice(index, 1);
+        }
+      } catch (error) {
+        throw error;
       }
     };
 
     const createFolder = async (name: string) => {
-      const newFolder: Folder = {
-        name,
-        files: [],
-        _id: Date.now().toString(),
-      };
-      folder.value.push(newFolder);
+      try {
+        const result = await axios.patch(`${albumDomain}/0`, {
+          action: "create",
+          folderName: name,
+        });
+        folder.value = result.data.data;
+      } catch (error) {
+        throw error;
+      }
     };
 
     return {
       folder,
       setFolderList,
-      getImageSrc,
       updateFolderName,
       deleteFolder,
       createFolder,
