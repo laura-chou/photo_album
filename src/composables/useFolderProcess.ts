@@ -8,7 +8,7 @@ const isProduction = Number(import.meta.env.VITE_PRD_ENV) === 1;
 export const useFolderProcess = () => {
   const getImageSrc = async (id: string, fileName: string): Promise<string> => {
     try {
-      const url = `${fileDomain}/${id}/${fileName}`;
+      const url = `${fileDomain}/${fileName}`;
       if (isProduction) {
         const result = await axios.get(url, {
           withCredentials: true,
@@ -26,6 +26,7 @@ export const useFolderProcess = () => {
       return errorImage;
     }
   };
+
   const processFolderFiles = async (folder: Folder): Promise<Folder> => {
     const processedFiles: FileItem[] = await Promise.all(
       folder.files.map(async (file) => {

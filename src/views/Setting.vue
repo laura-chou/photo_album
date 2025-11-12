@@ -9,7 +9,7 @@ defineOptions({
   name: "SettingPage",
 });
 
-export interface FolderItem {
+interface EditableFolder {
   _id: string;
   name: string;
   isEditing?: boolean;
@@ -19,14 +19,14 @@ export interface FolderItem {
 const router = useRouter();
 const albumStore = useAlbumStore();
 const { handleError } = useErrorRedirect();
-const folders = ref<FolderItem[]>([]);
+const folders = ref<EditableFolder[]>([]);
 const createFolderName = ref("");
 
 watch(
   () => albumStore.folder,
   (newVal) => {
-    folders.value = newVal.map((f) => ({
-      ...f,
+    folders.value = newVal.map((folder) => ({
+      ...folder,
       isEditing: false,
       tempName: "",
     }));
@@ -48,30 +48,28 @@ const deleteFolder = async (folderId: string) => {
   }
 };
 
-const startEdit = (item: FolderItem) => {
+const startEdit = (item: EditableFolder) => {
   item.isEditing = true;
   item.tempName = item.name;
 };
 
-const saveEdit = async (item: FolderItem) => {
+const saveEdit = async (item: EditableFolder) => {
   if (!item.isEditing) return;
   if (!item.tempName?.trim()) {
     alert("請輸入名稱");
     return;
   }
-  item.name = item.tempName;
 
   try {
-    await albumStore.updateFolderName(item._id, item.name);
+    await albumStore.updateFolderName(item._id, item.tempName);
     item.isEditing = false;
   } catch (error) {
     handleError(error, "saveEdit");
   }
 };
 
-const cancelEdit = (item: FolderItem) => {
+const cancelEdit = (item: EditableFolder) => {
   item.isEditing = false;
-  item.tempName = item.name;
 };
 
 const createFolder = async () => {

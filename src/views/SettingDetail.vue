@@ -1,30 +1,111 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import axios from "axios";
+import { ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { useRouter } from "vue-router";
 import { useAlbumStore } from "@/stores/album";
-interface FileItem {
+import { useErrorRedirect } from "@/composables/useErrorRedirect";
+import { useAlert } from "@/composables/useAlert";
+
+interface EditableFile {
   _id: string;
   customName: string;
-  storeName: string;
+  isEditing?: boolean;
+  tempName?: string;
 }
+
 const route = useRoute();
 const router = useRouter();
-const alnumStore = useAlbumStore();
-const selectedFolder = ref<FileItem[] | null>(null);
+const albumStore = useAlbumStore();
+const { handleError } = useErrorRedirect();
+const { alerts, triggerAlert } = useAlert();
 
-onMounted(async () => {
-  const id = route.params.id;
-  const folder = alnumStore.folder.find((item) => item._id === id);
-  selectedFolder.value = folder ? folder.files : [];
-});
+const processedFiles = ref<EditableFile[] | null>(null);
+const fileInput = ref<HTMLInputElement | null>(null);
 
-const handleEdit = (id: string) => {
-  console.log(id);
-};
+const id = route.params.id as string;
+const files = albumStore.getFilsByFolderId(id);
+
+watch(
+  () => files.value,
+  (newVal) => {
+    if (!newVal) return;
+    processedFiles.value = newVal.map((file) => ({
+      ...file,
+      isEditing: false,
+      tempName: "",
+    }));
+  },
+  { immediate: true, deep: true }
+);
 
 const previous = () => {
   router.push(`/setting`);
+};
+
+const openFilePicker = () => {
+  fileInput.value?.click();
+};
+
+const handleFileUpload = async (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  const files = Array.from(input?.files || []);
+  if (files.length === 0) return;
+  try {
+    await albumStore.uploadFiles(id, files);
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const status = error.response?.status;
+      switch (status) {
+        case 400:
+          triggerAlert("已達上傳上限 (最多 3 個檔案)", "error", 1500);
+          break;
+        case 413:
+          triggerAlert("檔案太大，單檔不得超過 1MB", "error", 1500);
+          break;
+        default:
+          handleError(error, "handleFileUpload", status);
+      }
+    } else {
+      handleError(error, "handleFileUpload");
+    }
+  } finally {
+    input.value = "";
+  }
+};
+
+const startEdit = (item: EditableFile) => {
+  item.isEditing = true;
+  item.tempName = item.customName;
+};
+
+const saveEdit = async (item: EditableFile) => {
+  if (!item.isEditing) return;
+  if (!item.tempName?.trim()) {
+    alert("請輸入名稱");
+    return;
+  }
+
+  try {
+    await albumStore.updateFileName(item._id, item.tempName);
+    item.isEditing = false;
+  } catch (error) {
+    handleError(error, "saveEdit");
+  }
+};
+
+const cancelEdit = (item: EditableFile) => {
+  item.isEditing = false;
+};
+
+const deleteFile = async (fileId: string) => {
+  if (confirm("確定要刪除嗎?")) {
+    try {
+      await albumStore.deleteFile(fileId);
+    } catch (error) {
+      handleError(error, "deleteFile");
+    }
+  }
 };
 </script>
 
@@ -32,13 +113,40 @@ const previous = () => {
   <PhotoNavbar :isLoggedIn="true" />
   <CssDoodle :isLoggedIn="true" />
   <div class="container mt-3">
-    <button
-      type="button"
-      class="btn btn-secondary d-flex align-items-center mb-3"
-      @click="previous"
-    >
-      <VueFeather type="arrow-left"></VueFeather>返回
-    </button>
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <AlertMessage
+        v-for="alert in alerts"
+        :key="alert.id"
+        :message="alert.message"
+        :type="alert.type"
+      />
+      <button type="button" class="btn btn-secondary d-flex align-items-center" @click="previous">
+        <VueFeather type="arrow-left"></VueFeather>返回
+      </button>
+      <div v-if="albumStore.isUploading" class="progress">
+        <div
+          class="progress-bar progress-bar-striped progress-bar-animated"
+          role="progressbar"
+          :aria-valuenow="albumStore.uploadProgress"
+          aria-valuemin="0"
+          aria-valuemax="100"
+        >
+          <span class="fw-bold fs-6">&ensp;{{ albumStore.uploadProgress }} %</span>
+        </div>
+      </div>
+      <button v-else type="button" class="btn btn-primary" @click="openFilePicker">
+        <VueFeather type="upload"></VueFeather>
+      </button>
+      <input
+        class="d-none"
+        ref="fileInput"
+        type="file"
+        accept="image/*"
+        @change="handleFileUpload"
+        multiple
+      />
+    </div>
+
     <table class="table table-hover text-center align-middle">
       <thead>
         <tr class="table-info">
@@ -47,15 +155,32 @@ const previous = () => {
         </tr>
       </thead>
       <tbody>
-        <tr v-for="item in selectedFolder" :key="item._id">
-          <td>{{ item.customName }}</td>
+        <tr v-for="item in processedFiles" :key="item._id">
           <td>
-            <button type="button" class="btn btn-success btn-td" @click="handleEdit(item._id)">
-              <VueFeather type="edit"></VueFeather>
-            </button>
-            <button type="button" class="btn btn-danger btn-td">
-              <VueFeather type="trash-2"></VueFeather>
-            </button>
+            <template v-if="item.isEditing">
+              <input class="form-control" v-model="item.tempName" />
+            </template>
+            <template v-else>
+              {{ item.customName }}
+            </template>
+          </td>
+          <td>
+            <template v-if="item.isEditing">
+              <button type="button" class="btn btn-success btn-td" @click="saveEdit(item)">
+                <VueFeather type="save"></VueFeather>
+              </button>
+              <button type="button" class="btn btn-danger btn-td" @click="cancelEdit(item)">
+                <VueFeather type="x"></VueFeather>
+              </button>
+            </template>
+            <template v-else>
+              <button type="button" class="btn btn-success btn-td" @click="startEdit(item)">
+                <VueFeather type="edit"></VueFeather>
+              </button>
+              <button type="button" class="btn btn-danger btn-td" @click="deleteFile(item._id)">
+                <VueFeather type="trash-2"></VueFeather>
+              </button>
+            </template>
           </td>
         </tr>
       </tbody>
@@ -67,5 +192,19 @@ const previous = () => {
 .btn {
   line-height: 14px;
   margin: 0 5px;
+}
+
+.table-info th {
+  &:nth-child(1) {
+    width: 45%;
+  }
+  &:nth-child(2) {
+    width: 55%;
+  }
+}
+
+.progress {
+  width: 250px;
+  height: 20px;
 }
 </style>
