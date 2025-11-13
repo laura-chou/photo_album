@@ -69,37 +69,34 @@ const handleFolder = (name: string, files: FileItem[]) => {
     </VueSwiper>
   </div>
   <div v-else class="m-3">
-    <div class="row">
-      <div class="folder col-6 col-sm-3 col-lg-2" v-for="item in albumStore.folder" :key="item._id">
-        <button
-          type="button"
-          class="btn btn-outline-secondary"
+    <table class="table table-hover">
+      <tbody>
+        <tr
+          v-for="item in albumStore.folder"
+          :key="item._id"
           @click="handleFolder(item.name, item.files)"
         >
-          <img :src="getFolderImage(item.files)" />
-          <div class="file-name">
-            <span>{{ item.name }}</span>
-          </div>
-        </button>
-      </div>
-    </div>
+          <td class="folder d-flex align-items-center">
+            <img :src="getFolderImage(item.files)" />
+            <span>&ensp;{{ item.name }}</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 </template>
 
 <style lang="scss" scoped>
-.btn {
-  line-height: 17px;
-  margin: 0 5px;
+table tr {
+  cursor: pointer;
 }
 
 .folder {
-  text-align: center;
   img {
-    width: 100px;
+    width: 30px;
   }
-  .file-name {
-    font-size: 20px;
-    margin-top: 10px;
+  span {
+    font-size: 18px;
     font-weight: bold;
     color: #3c3c3c;
   }

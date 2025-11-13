@@ -19,11 +19,17 @@ export const useAlbumStore = defineStore(
       folder.value = newList;
     };
 
+    const isFolderLimitExceeded = computed(() => folder.value.length >= 5);
+
     const getFilsByFolderId = (id: string) =>
       computed(() => {
         const targetFolder = folder.value.find((item) => item._id === id);
         return targetFolder ? targetFolder.files : [];
       });
+
+    const isFilesLimitExceeded = (id: string) => {
+      return getFilsByFolderId(id).value.length >= 5;
+    };
 
     const updateFolderName = async (id: string, name: string) => {
       try {
@@ -118,6 +124,8 @@ export const useAlbumStore = defineStore(
       isUploading,
       uploadProgress,
       setFolderList,
+      isFolderLimitExceeded,
+      isFilesLimitExceeded,
       getFilsByFolderId,
       updateFolderName,
       deleteFolder,

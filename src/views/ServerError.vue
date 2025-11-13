@@ -8,6 +8,7 @@ defineOptions({
   <div class="server-error">
     <img src="@/assets/server-error.png" />
     <h2 class="mt-3 fw-bold">伺服器錯誤</h2>
+    <h2 class="fw-bold">請稍後再試</h2>
   </div>
 </template>
 

@@ -28,6 +28,7 @@ export const useUserStore = defineStore(
     const captchaId = computed(() => captcha.value.captchaId);
 
     const handleLoading = async () => {
+      userName.value = "";
       isLoading.value = true;
       try {
         const response = await axios.get(`${domain}/captcha`);
@@ -64,6 +65,16 @@ export const useUserStore = defineStore(
       }
     };
 
+    const logout = async () => {
+      try {
+        await axios.post(`${domain}/logout`);
+        localStorage.removeItem("user");
+        localStorage.removeItem("album");
+      } catch (error) {
+        throw error;
+      }
+    };
+
     return {
       isLoading,
       userName,
@@ -73,6 +84,7 @@ export const useUserStore = defineStore(
       handleLoading,
       login,
       register,
+      logout,
     };
   },
   {

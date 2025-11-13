@@ -4,6 +4,7 @@ import { useRouter } from "vue-router";
 import { Modal } from "bootstrap";
 import { useAlbumStore } from "@/stores/album";
 import { useErrorRedirect } from "@/composables/useErrorRedirect";
+import { useAlert } from "@/composables/useAlert";
 
 defineOptions({
   name: "SettingPage",
@@ -12,6 +13,7 @@ defineOptions({
 interface EditableFolder {
   _id: string;
   name: string;
+  fileCount: number;
   isEditing?: boolean;
   tempName?: string;
 }
@@ -19,6 +21,7 @@ interface EditableFolder {
 const router = useRouter();
 const albumStore = useAlbumStore();
 const { handleError } = useErrorRedirect();
+const { alerts, triggerAlert } = useAlert();
 const folders = ref<EditableFolder[]>([]);
 const createFolderName = ref("");
 
@@ -27,6 +30,7 @@ watch(
   (newVal) => {
     folders.value = newVal.map((folder) => ({
       ...folder,
+      fileCount: folder.files.length,
       isEditing: false,
       tempName: "",
     }));
@@ -56,7 +60,7 @@ const startEdit = (item: EditableFolder) => {
 const saveEdit = async (item: EditableFolder) => {
   if (!item.isEditing) return;
   if (!item.tempName?.trim()) {
-    alert("請輸入名稱");
+    triggerAlert("請輸入名稱");
     return;
   }
 
@@ -104,10 +108,20 @@ const closeModal = () => {
     <CssDoodle :isLoggedIn="true" />
   </div>
   <div class="container mt-3">
-    <div class="text-end">
+    <AlertMessage
+      v-for="alert in alerts"
+      :key="alert.id"
+      :message="alert.message"
+      :type="alert.type"
+    />
+    <div>
+      <div v-if="albumStore.isFolderLimitExceeded" class="alert alert-danger text-center">
+        已達新增上限 (最多 5 個資料夾)
+      </div>
       <button
+        v-else
         type="button"
-        class="btn btn-primary btn-td mb-3"
+        class="btn btn-primary btn-custom mb-3"
         data-bs-toggle="modal"
         data-bs-target="#folderModal"
       >
@@ -135,7 +149,7 @@ const closeModal = () => {
                 placeholder="請輸入資料夾名稱"
                 v-model="createFolderName"
               />
-              <button type="button" class="btn btn-primary btn-td" @click="createFolder">
+              <button type="button" class="btn btn-primary btn-custom" @click="createFolder">
                 <VueFeather type="check"></VueFeather>
               </button>
             </div>
@@ -162,21 +176,34 @@ const closeModal = () => {
           </td>
           <td>
             <template v-if="item.isEditing">
-              <button type="button" class="btn btn-success btn-td" @click="saveEdit(item)">
+              <button type="button" class="btn btn-success btn-custom" @click="saveEdit(item)">
                 <VueFeather type="save"></VueFeather>
               </button>
-              <button type="button" class="btn btn-danger btn-td" @click="cancelEdit(item)">
+              <button type="button" class="btn btn-danger btn-custom" @click="cancelEdit(item)">
                 <VueFeather type="x"></VueFeather>
               </button>
             </template>
             <template v-else>
-              <button type="button" class="btn btn-primary btn-td" @click="goToDetail(item._id)">
+              <button
+                type="button"
+                class="btn btn-primary btn-custom position-relative"
+                @click="goToDetail(item._id)"
+              >
                 <VueFeather type="file"></VueFeather>
+                <span
+                  class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                >
+                  {{ item.fileCount }}
+                </span>
               </button>
-              <button type="button" class="btn btn-success btn-td" @click="startEdit(item)">
+              <button type="button" class="btn btn-success btn-custom" @click="startEdit(item)">
                 <VueFeather type="edit"></VueFeather>
               </button>
-              <button type="button" class="btn btn-danger btn-td" @click="deleteFolder(item._id)">
+              <button
+                type="button"
+                class="btn btn-danger btn-custom"
+                @click="deleteFolder(item._id)"
+              >
                 <VueFeather type="trash-2"></VueFeather>
               </button>
             </template>
@@ -195,5 +222,11 @@ const closeModal = () => {
   &:nth-child(2) {
     width: 55%;
   }
+}
+
+.alert-custom {
+  top: 75% !important;
+  left: 50%;
+  transform: translate(-60%, -50%);
 }
 </style>

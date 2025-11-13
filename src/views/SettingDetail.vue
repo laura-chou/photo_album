@@ -58,7 +58,7 @@ const handleFileUpload = async (event: Event) => {
       const status = error.response?.status;
       switch (status) {
         case 400:
-          triggerAlert("已達上傳上限 (最多 3 個檔案)", "error", 1500);
+          triggerAlert("已達上傳上限 (最多 5 個檔案)", "error", 1500);
           break;
         case 413:
           triggerAlert("檔案太大，單檔不得超過 1MB", "error", 1500);
@@ -82,7 +82,7 @@ const startEdit = (item: EditableFile) => {
 const saveEdit = async (item: EditableFile) => {
   if (!item.isEditing) return;
   if (!item.tempName?.trim()) {
-    alert("請輸入名稱");
+    triggerAlert("請輸入名稱");
     return;
   }
 
@@ -113,14 +113,18 @@ const deleteFile = async (fileId: string) => {
   <PhotoNavbar :isLoggedIn="true" />
   <CssDoodle :isLoggedIn="true" />
   <div class="container mt-3">
+    <AlertMessage
+      v-for="alert in alerts"
+      :key="alert.id"
+      :message="alert.message"
+      :type="alert.type"
+    />
     <div class="d-flex align-items-center justify-content-between mb-3">
-      <AlertMessage
-        v-for="alert in alerts"
-        :key="alert.id"
-        :message="alert.message"
-        :type="alert.type"
-      />
-      <button type="button" class="btn btn-secondary d-flex align-items-center" @click="previous">
+      <button
+        type="button"
+        class="btn btn-secondary btn-custom d-flex align-items-center"
+        @click="previous"
+      >
         <VueFeather type="arrow-left"></VueFeather>返回
       </button>
       <div v-if="albumStore.isUploading" class="progress">
@@ -134,7 +138,18 @@ const deleteFile = async (fileId: string) => {
           <span class="fw-bold fs-6">&ensp;{{ albumStore.uploadProgress }} %</span>
         </div>
       </div>
-      <button v-else type="button" class="btn btn-primary" @click="openFilePicker">
+      <div
+        v-else-if="albumStore.isFilesLimitExceeded(id)"
+        class="alert alert-danger text-center alert-limit"
+      >
+        已達上傳上限 (最多 5 個檔案)
+      </div>
+      <button
+        v-else-if="!albumStore.isUploading || !albumStore.isFilesLimitExceeded(id)"
+        type="button"
+        class="btn btn-primary btn-custom"
+        @click="openFilePicker"
+      >
         <VueFeather type="upload"></VueFeather>
       </button>
       <input
@@ -166,18 +181,18 @@ const deleteFile = async (fileId: string) => {
           </td>
           <td>
             <template v-if="item.isEditing">
-              <button type="button" class="btn btn-success btn-td" @click="saveEdit(item)">
+              <button type="button" class="btn btn-success btn-custom" @click="saveEdit(item)">
                 <VueFeather type="save"></VueFeather>
               </button>
-              <button type="button" class="btn btn-danger btn-td" @click="cancelEdit(item)">
+              <button type="button" class="btn btn-danger btn-custom" @click="cancelEdit(item)">
                 <VueFeather type="x"></VueFeather>
               </button>
             </template>
             <template v-else>
-              <button type="button" class="btn btn-success btn-td" @click="startEdit(item)">
+              <button type="button" class="btn btn-success btn-custom" @click="startEdit(item)">
                 <VueFeather type="edit"></VueFeather>
               </button>
-              <button type="button" class="btn btn-danger btn-td" @click="deleteFile(item._id)">
+              <button type="button" class="btn btn-danger btn-custom" @click="deleteFile(item._id)">
                 <VueFeather type="trash-2"></VueFeather>
               </button>
             </template>
@@ -189,9 +204,16 @@ const deleteFile = async (fileId: string) => {
 </template>
 
 <style lang="scss" scoped>
-.btn {
-  line-height: 14px;
+.alert-limit {
+  line-height: 10px;
   margin: 0 5px;
+  width: 70%;
+}
+
+.alert-custom {
+  top: 75% !important;
+  left: 50%;
+  transform: translate(-60%, -50%);
 }
 
 .table-info th {

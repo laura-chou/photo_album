@@ -17,10 +17,10 @@ onMounted(() => {
 const alertClass = computed(() => {
   switch (props.type) {
     case "success":
-      return "alert alert-success d-flex align-items-center";
+      return "alert alert-success alert-custom d-flex align-items-center";
     case "error":
     default:
-      return "alert alert-danger d-flex align-items-center";
+      return "alert alert-danger alert-custom d-flex align-items-center";
   }
 });
 
@@ -42,7 +42,7 @@ const iconType = computed(() => {
 </template>
 
 <style lang="scss" scoped>
-.alert {
+.alert-custom {
   position: absolute;
   top: 15%;
 }
