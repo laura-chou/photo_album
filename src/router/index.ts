@@ -63,6 +63,7 @@ router.beforeEach((to, from, next) => {
   const album = localStorage.getItem("album");
 
   const isLoggedIn = !!(user && album);
+
   if (to.meta.requiresAuth && !isLoggedIn) {
     next("/");
   } else if (to.path === "/login" && isLoggedIn) {

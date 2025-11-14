@@ -19,6 +19,25 @@ const account = ref("");
 const password = ref("");
 const captcha = ref("");
 
+const handleRefresh = async () => {
+  try {
+    await userStore.loading();
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const status = error.response?.status;
+      switch (status) {
+        case 429:
+          triggerAlert("請求過多，請稍後再試");
+          break;
+        default:
+          handleError(error, "refresh", status);
+      }
+    } else {
+      handleError(error, "refresh");
+    }
+  }
+};
+
 const handleRegister = async () => {
   const fields = {
     帳號: account.value,
@@ -65,10 +84,10 @@ const handleRegister = async () => {
 };
 </script>
 <template>
-  <PhotoNavbar />
-  <CssDoodle />
+  <NavbarComponent />
+  <CssDoodleComponent />
   <div class="h-100 d-flex align-items-center justify-content-center">
-    <AlertMessage
+    <AlertComponent
       v-for="alert in alerts"
       :key="alert.id"
       :message="alert.message"
@@ -78,7 +97,7 @@ const handleRegister = async () => {
       <div class="card-body card-body-flex">
         <div class="input-group">
           <span class="input-group-text" id="account">
-            <vue-feather type="user"></vue-feather>
+            <VueFeather type="user"></VueFeather>
           </span>
           <input
             type="text"
@@ -89,7 +108,7 @@ const handleRegister = async () => {
         </div>
         <div class="input-group">
           <span class="input-group-text" id="password">
-            <vue-feather type="lock"></vue-feather>
+            <VueFeather type="lock"></VueFeather>
           </span>
           <input
             type="password"
@@ -108,6 +127,11 @@ const handleRegister = async () => {
           />
           <div id="svg" v-html="userStore.captchaSvg"></div>
         </div>
+        <div class="w-100 d-flex justify-content-end">
+          <button type="button" class="btn btn-light refresh" @click="handleRefresh">
+            <VueFeather type="refresh-cw"></VueFeather>
+          </button>
+        </div>
         <button type="button" class="btn btn-red" @click="handleRegister">註冊</button>
       </div>
     </div>
@@ -122,5 +146,18 @@ const handleRegister = async () => {
 #svg {
   border-radius: 0 12px 12px 0;
   overflow: hidden;
+}
+
+.refresh {
+  padding: 0 9px;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  i {
+    width: 20px;
+    height: 20px;
+  }
 }
 </style>

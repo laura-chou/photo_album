@@ -1,15 +1,19 @@
 <script setup lang="ts">
 import axios from "axios";
-import { ref, watch } from "vue";
+import { ref, watch, computed, onMounted } from "vue";
 import { useRoute } from "vue-router";
 import { useRouter } from "vue-router";
+import PhotoSwipeLightbox from "photoswipe/lightbox";
+import "photoswipe/dist/photoswipe.css";
 import { useAlbumStore } from "@/stores/album";
 import { useErrorRedirect } from "@/composables/useErrorRedirect";
+import { useFolderProcess } from "@/composables/useFolderProcess";
 import { useAlert } from "@/composables/useAlert";
 
 interface EditableFile {
   _id: string;
   customName: string;
+  imageUrl: string;
   isEditing?: boolean;
   tempName?: string;
 }
@@ -18,13 +22,19 @@ const route = useRoute();
 const router = useRouter();
 const albumStore = useAlbumStore();
 const { handleError } = useErrorRedirect();
+const { processFolders } = useFolderProcess();
 const { alerts, triggerAlert } = useAlert();
 
 const processedFiles = ref<EditableFile[] | null>(null);
 const fileInput = ref<HTMLInputElement | null>(null);
 
 const id = route.params.id as string;
-const files = albumStore.getFilsByFolderId(id);
+const files = computed(() => albumStore.getFilesByFolderId(id));
+
+onMounted(async () => {
+  const formattedFolders = await processFolders(albumStore.folder);
+  albumStore.setFolderList(formattedFolders);
+});
 
 watch(
   () => files.value,
@@ -36,7 +46,7 @@ watch(
       tempName: "",
     }));
   },
-  { immediate: true, deep: true }
+  { immediate: true }
 );
 
 const previous = () => {
@@ -107,13 +117,31 @@ const deleteFile = async (fileId: string) => {
     }
   }
 };
+
+const openGallery = (url: string) => {
+  let lightbox: PhotoSwipeLightbox | null = null;
+  if (!lightbox) {
+    lightbox = new PhotoSwipeLightbox({
+      dataSource: [
+        {
+          src: url,
+          w: 1200,
+          h: 800,
+        },
+      ],
+      pswpModule: () => import("photoswipe"),
+    });
+    lightbox.init();
+  }
+  lightbox.loadAndOpen(0);
+};
 </script>
 
 <template>
-  <PhotoNavbar :isLoggedIn="true" />
-  <CssDoodle :isLoggedIn="true" />
+  <NavbarComponent :isLoggedIn="true" />
+  <CssDoodleComponent :isLoggedIn="true" />
   <div class="container mt-3">
-    <AlertMessage
+    <AlertComponent
       v-for="alert in alerts"
       :key="alert.id"
       :message="alert.message"
@@ -165,12 +193,15 @@ const deleteFile = async (fileId: string) => {
     <table class="table table-hover text-center align-middle">
       <thead>
         <tr class="table-info">
-          <th>檔案名稱</th>
+          <th colspan="2">檔案</th>
           <th>編輯</th>
         </tr>
       </thead>
       <tbody>
         <tr v-for="item in processedFiles" :key="item._id">
+          <td>
+            <img :src="item.imageUrl" @click="openGallery(item.imageUrl)" class="file-image" />
+          </td>
           <td>
             <template v-if="item.isEditing">
               <input class="form-control" v-model="item.tempName" />
@@ -228,5 +259,11 @@ const deleteFile = async (fileId: string) => {
 .progress {
   width: 250px;
   height: 20px;
+}
+
+.file-image {
+  cursor: pointer;
+  width: 70px;
+  height: 70px;
 }
 </style>

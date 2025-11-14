@@ -1,6 +1,6 @@
 <script setup lang="ts">
 defineOptions({
-  name: "PhotoNavbar",
+  name: "NavbarComponent",
 });
 
 import { useRoute } from "vue-router";
@@ -31,6 +31,7 @@ const props = withDefaults(defineProps<{ isLoggedIn?: boolean }>(), { isLoggedIn
         <span class="navbar-toggler-icon"></span>
       </button>
       <div class="collapse navbar-collapse flex-grow-0" id="navbar">
+        <span v-if="props.isLoggedIn" class="me-3 user-name">laura</span>
         <ul v-if="!props.isLoggedIn" class="navbar-nav me-auto mb-2 mb-lg-0 text-center fw-bold">
           <li class="nav-item">
             <router-link
@@ -74,5 +75,11 @@ const props = withDefaults(defineProps<{ isLoggedIn?: boolean }>(), { isLoggedIn
 <style lang="scss" scoped>
 .navbar {
   z-index: 99;
+}
+
+.user-name {
+  color: white;
+  font-size: 18px;
+  font-weight: bold;
 }
 </style>

@@ -2,11 +2,14 @@ import { defineStore } from "pinia";
 import axios from "axios";
 import { ref, computed } from "vue";
 import type { Folder } from "@/types/album";
+import { useFolderProcess } from "@/composables/useFolderProcess";
 
 axios.defaults.withCredentials = true;
 
 const albumDomain = `${import.meta.env.VITE_APIURL}/album`;
 const fileDomain = `${import.meta.env.VITE_APIURL}/file`;
+
+const { processFolders } = useFolderProcess();
 
 export const useAlbumStore = defineStore(
   "album",
@@ -21,14 +24,13 @@ export const useAlbumStore = defineStore(
 
     const isFolderLimitExceeded = computed(() => folder.value.length >= 5);
 
-    const getFilsByFolderId = (id: string) =>
-      computed(() => {
-        const targetFolder = folder.value.find((item) => item._id === id);
-        return targetFolder ? targetFolder.files : [];
-      });
+    const getFilesByFolderId = (id: string) => {
+      const targetFolder = folder.value.find((item) => item._id === id);
+      return targetFolder ? targetFolder.files : [];
+    };
 
     const isFilesLimitExceeded = (id: string) => {
-      return getFilsByFolderId(id).value.length >= 5;
+      return getFilesByFolderId(id).length >= 5;
     };
 
     const updateFolderName = async (id: string, name: string) => {
@@ -87,7 +89,7 @@ export const useAlbumStore = defineStore(
             }
           },
         });
-        folder.value = result.data.data;
+        folder.value = await processFolders(result.data.data);
       } catch (error) {
         throw error;
       } finally {
@@ -102,7 +104,7 @@ export const useAlbumStore = defineStore(
           action: "rename",
           fileName: name,
         });
-        folder.value = result.data.data;
+        folder.value = await processFolders(result.data.data);
       } catch (error) {
         throw error;
       }
@@ -113,7 +115,7 @@ export const useAlbumStore = defineStore(
         const result = await axios.patch(`${fileDomain}/${id}`, {
           action: "delete",
         });
-        folder.value = result.data.data;
+        folder.value = await processFolders(result.data.data);
       } catch (error) {
         throw error;
       }
@@ -126,7 +128,7 @@ export const useAlbumStore = defineStore(
       setFolderList,
       isFolderLimitExceeded,
       isFilesLimitExceeded,
-      getFilsByFolderId,
+      getFilesByFolderId,
       updateFolderName,
       deleteFolder,
       createFolder,

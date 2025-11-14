@@ -36,7 +36,7 @@ const iconType = computed(() => {
 
 <template>
   <div :class="alertClass" role="alert">
-    <vue-feather class="me-2" :type="iconType" />
+    <VueFeather class="me-2" :type="iconType"></VueFeather>
     <div>{{ message }}</div>
   </div>
 </template>

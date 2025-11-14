@@ -6,7 +6,7 @@ const fileDomain = `${import.meta.env.VITE_APIURL}/file`;
 const isProduction = Number(import.meta.env.VITE_PRD_ENV) === 1;
 
 export const useFolderProcess = () => {
-  const getImageSrc = async (id: string, fileName: string): Promise<string> => {
+  const getImageSrc = async (fileName: string): Promise<string> => {
     try {
       const url = `${fileDomain}/${fileName}`;
       if (isProduction) {
@@ -19,6 +19,7 @@ export const useFolderProcess = () => {
           withCredentials: true,
           responseType: "blob",
         });
+
         return URL.createObjectURL(result.data);
       }
     } catch (error) {
@@ -30,10 +31,10 @@ export const useFolderProcess = () => {
   const processFolderFiles = async (folder: Folder): Promise<Folder> => {
     const processedFiles: FileItem[] = await Promise.all(
       folder.files.map(async (file) => {
-        const imageUrl = await getImageSrc(folder._id, file.storeName);
+        const imageUrl = await getImageSrc(file.storeName);
         return {
           ...file,
-          storeName: imageUrl,
+          imageUrl,
         };
       })
     );

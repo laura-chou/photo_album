@@ -104,11 +104,11 @@ const closeModal = () => {
 
 <template>
   <div>
-    <PhotoNavbar :isLoggedIn="true" />
-    <CssDoodle :isLoggedIn="true" />
+    <NavbarComponent :isLoggedIn="true" />
+    <CssDoodleComponent :isLoggedIn="true" />
   </div>
   <div class="container mt-3">
-    <AlertMessage
+    <AlertComponent
       v-for="alert in alerts"
       :key="alert.id"
       :message="alert.message"

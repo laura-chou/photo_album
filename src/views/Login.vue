@@ -51,10 +51,10 @@ const handleLogin = async () => {
 };
 </script>
 <template>
-  <PhotoNavbar />
-  <CssDoodle />
+  <NavbarComponent />
+  <CssDoodleComponent />
   <div class="h-100 d-flex align-items-center justify-content-center">
-    <AlertMessage
+    <AlertComponent
       v-for="alert in alerts"
       :key="alert.id"
       :message="alert.message"
@@ -64,7 +64,7 @@ const handleLogin = async () => {
       <div class="card-body card-body-flex">
         <div class="input-group">
           <span class="input-group-text" id="account">
-            <vue-feather type="user"></vue-feather>
+            <VueFeather type="user"></VueFeather>
           </span>
           <input
             type="text"
@@ -75,7 +75,7 @@ const handleLogin = async () => {
         </div>
         <div class="input-group">
           <span class="input-group-text" id="password">
-            <vue-feather type="lock"></vue-feather>
+            <VueFeather type="lock"></VueFeather>
           </span>
           <input
             type="password"

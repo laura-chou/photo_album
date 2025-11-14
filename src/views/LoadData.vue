@@ -12,7 +12,7 @@ const userStore = useUserStore();
 
 onMounted(async () => {
   try {
-    await userStore.handleLoading();
+    await userStore.loading();
     router.push("/login");
   } catch (error) {
     if (axios.isAxiosError(error)) {
@@ -25,7 +25,7 @@ onMounted(async () => {
           }, 2000);
           break;
         default:
-          handleError(error, "loading", status);
+          handleError(error, "loading");
       }
     } else {
       handleError(error, "loading");
@@ -35,26 +35,11 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="loading">
-    <AlertMessage
-      v-for="alert in alerts"
-      :key="alert.id"
-      :message="alert.message"
-      :type="alert.type"
-    />
-    <img src="@/assets/loading.svg" />
-  </div>
+  <AlertComponent
+    v-for="alert in alerts"
+    :key="alert.id"
+    :message="alert.message"
+    :type="alert.type"
+  />
+  <LoadingComponent />
 </template>
-
-<style lang="scss" scoped>
-.loading {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  img {
-    width: 200px;
-  }
-}
-</style>

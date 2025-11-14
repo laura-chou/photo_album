@@ -40,8 +40,8 @@ const handleFolder = (name: string, files: FileItem[]) => {
 
 <template>
   <div style="height: 97px">
-    <PhotoNavbar :isLoggedIn="true" />
-    <CssDoodle :isLoggedIn="true" />
+    <NavbarComponent :isLoggedIn="true" />
+    <CssDoodleComponent :isLoggedIn="true" />
     <nav class="navbar navbar-light bg-light">
       <div class="d-flex align-items-center">
         <ol class="breadcrumb m-0 ms-4">
@@ -63,7 +63,7 @@ const handleFolder = (name: string, files: FileItem[]) => {
       :modules="swiperModules"
     >
       <SwiperSlide class="text-center" v-for="file in folderFiles" :key="file._id">
-        <img class="w-100 h-100" :src="file.storeName" />
+        <img class="w-100 h-100" :src="file.imageUrl" />
         <div class="caption">{{ file.customName }}</div>
       </SwiperSlide>
     </VueSwiper>

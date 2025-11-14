@@ -27,7 +27,7 @@ export const useUserStore = defineStore(
     const captchaSvg = computed(() => captcha.value.svg);
     const captchaId = computed(() => captcha.value.captchaId);
 
-    const handleLoading = async () => {
+    const loading = async () => {
       userName.value = "";
       isLoading.value = true;
       try {
@@ -68,10 +68,11 @@ export const useUserStore = defineStore(
     const logout = async () => {
       try {
         await axios.post(`${domain}/logout`);
-        localStorage.removeItem("user");
-        localStorage.removeItem("album");
       } catch (error) {
         throw error;
+      } finally {
+        localStorage.removeItem("user");
+        localStorage.removeItem("album");
       }
     };
 
@@ -81,7 +82,7 @@ export const useUserStore = defineStore(
       captcha,
       captchaSvg,
       captchaId,
-      handleLoading,
+      loading,
       login,
       register,
       logout,
