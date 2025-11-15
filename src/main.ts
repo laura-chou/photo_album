@@ -1,12 +1,11 @@
-import { createApp } from "vue";
 import { createPinia } from "pinia";
+import piniaPluginPersistedstate from "pinia-plugin-persistedstate";
+import { Swiper, SwiperSlide } from "swiper/vue";
+import { createApp } from "vue";
+import VueFeather from "vue-feather";
 
 import App from "./App.vue";
 import router from "./router";
-
-import piniaPluginPersistedstate from "pinia-plugin-persistedstate";
-import VueFeather from "vue-feather";
-import { Swiper, SwiperSlide } from "swiper/vue";
 
 import "css-doodle";
 import "bootstrap";
@@ -15,10 +14,10 @@ import "swiper/css";
 import "swiper/css/pagination";
 import "@/styles/common.scss";
 
-import NavbarComponent from "@/components/NavbarComponent.vue";
-import CssDoodleComponent from "@/components/CssDoodleComponent.vue";
 import AlertComponent from "@/components/AlertComponent.vue";
+import CssDoodleComponent from "@/components/CssDoodleComponent.vue";
 import LoadingComponent from "@/components/LoadingComponent.vue";
+import NavbarComponent from "@/components/NavbarComponent.vue";
 
 const pinia = createPinia();
 pinia.use(piniaPluginPersistedstate);

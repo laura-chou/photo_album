@@ -1,6 +1,7 @@
 import axios from "axios";
-import type { Folder, FileItem } from "@/types/album-types";
+
 import errorImage from "@/assets/error-image.png";
+import type { Folder, FileItem } from "@/types/album-types";
 
 const fileDomain = `${import.meta.env.VITE_APIURL}/file`;
 const isProduction = Number(import.meta.env.VITE_PRD_ENV) === 1;

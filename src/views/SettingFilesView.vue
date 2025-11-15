@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import axios from "axios";
+import PhotoSwipeLightbox from "photoswipe/lightbox";
 import { ref, watch, computed, onMounted } from "vue";
 import { useRoute } from "vue-router";
 import { useRouter } from "vue-router";
-import PhotoSwipeLightbox from "photoswipe/lightbox";
+
 import "photoswipe/dist/photoswipe.css";
-import { useAlbumStore } from "@/stores/album-store";
+import { useAlert } from "@/composables/useAlert";
 import { useErrorRedirect } from "@/composables/useErrorRedirect";
 import { useFolderProcess } from "@/composables/useFolderProcess";
-import { useAlert } from "@/composables/useAlert";
+import { useAlbumStore } from "@/stores/album-store";
 
 interface EditableFile {
   _id: string;

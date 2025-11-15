@@ -1,14 +1,15 @@
 import { createRouter, createWebHistory } from "vue-router";
 import type { RouteRecordRaw } from "vue-router";
+
+import AlbumView from "@/views/AlbumView.vue";
+import ErrorView from "@/views/ErrorView.vue";
 import LoadingView from "@/views/LoadingView.vue";
-import NotFoundView from "@/views/NotFoundView.vue";
 import LoginView from "@/views/LoginView.vue";
 import LogoutView from "@/views/LogoutView.vue";
-import AlbumView from "@/views/AlbumView.vue";
+import NotFoundView from "@/views/NotFoundView.vue";
 import RegisterView from "@/views/RegisterView.vue";
-import SettingFolderView from "@/views/SettingFolderView.vue";
 import SettingFilesView from "@/views/SettingFilesView.vue";
-import ErrorView from "@/views/ErrorView.vue";
+import SettingFolderView from "@/views/SettingFolderView.vue";
 
 const routes: RouteRecordRaw[] = [
   {

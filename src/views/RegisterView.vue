@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import axios from "axios";
 import { ref } from "vue";
-import { useUserStore } from "@/stores/user-store";
+
 import { useAlert } from "@/composables/useAlert";
 import { useErrorRedirect } from "@/composables/useErrorRedirect";
 import { useFormValidator } from "@/composables/useFormValidator";
+import { useUserStore } from "@/stores/user-store";
 const { handleError } = useErrorRedirect();
 const { alerts, triggerAlert } = useAlert();
 const { validateRequired, validatePasswordLength, errorMessage } = useFormValidator();

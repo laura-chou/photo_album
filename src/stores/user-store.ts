@@ -1,7 +1,8 @@
+import axios from "axios";
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
+
 import { useAlbumStore } from "./album-store";
-import axios from "axios";
 
 axios.defaults.withCredentials = true;
 

@@ -1,10 +1,11 @@
 <script setup lang="ts">
+import { Modal } from "bootstrap";
 import { ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import { Modal } from "bootstrap";
-import { useAlbumStore } from "@/stores/album-store";
-import { useErrorRedirect } from "@/composables/useErrorRedirect";
+
 import { useAlert } from "@/composables/useAlert";
+import { useErrorRedirect } from "@/composables/useErrorRedirect";
+import { useAlbumStore } from "@/stores/album-store";
 
 interface EditableFolder {
   _id: string;

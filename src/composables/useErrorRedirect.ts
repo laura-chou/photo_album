@@ -1,5 +1,6 @@
 import axios from "axios";
 import { useRouter } from "vue-router";
+
 import { useErrorStore } from "@/stores/error-store";
 
 export const useErrorRedirect = () => {

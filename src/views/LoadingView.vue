@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import axios from "axios";
 import { onMounted } from "vue";
-import { useUserStore } from "@/stores/user-store";
 import { useRouter } from "vue-router";
+
 import { useAlert } from "@/composables/useAlert";
 import { useErrorRedirect } from "@/composables/useErrorRedirect";
+import { useUserStore } from "@/stores/user-store";
+
 const { handleError } = useErrorRedirect();
 const { alerts, triggerAlert } = useAlert();
 const router = useRouter();
