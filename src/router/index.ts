@@ -1,55 +1,55 @@
 import { createRouter, createWebHistory } from "vue-router";
 import type { RouteRecordRaw } from "vue-router";
-import LoadData from "@/views/LoadData.vue";
-import NotFound from "@/views/NotFound.vue";
-import Login from "@/views/Login.vue";
-import Logout from "@/views/Logout.vue";
-import Album from "@/views/Album.vue";
-import Register from "@/views/Register.vue";
-import Setting from "@/views/Setting.vue";
-import SettingDetail from "@/views/SettingDetail.vue";
-import ServerError from "@/views/ServerError.vue";
+import LoadingView from "@/views/LoadingView.vue";
+import NotFoundView from "@/views/NotFoundView.vue";
+import LoginView from "@/views/LoginView.vue";
+import LogoutView from "@/views/LogoutView.vue";
+import AlbumView from "@/views/AlbumView.vue";
+import RegisterView from "@/views/RegisterView.vue";
+import SettingFolderView from "@/views/SettingFolderView.vue";
+import SettingFilesView from "@/views/SettingFilesView.vue";
+import ErrorView from "@/views/ErrorView.vue";
 
 const routes: RouteRecordRaw[] = [
   {
     path: "/",
-    component: LoadData,
+    component: LoadingView,
   },
   {
     path: "/login",
-    component: Login,
+    component: LoginView,
   },
   {
     path: "/register",
-    component: Register,
+    component: RegisterView,
   },
   {
     path: "/album",
-    component: Album,
+    component: AlbumView,
     meta: { requiresAuth: true },
   },
   {
-    path: "/setting",
-    component: Setting,
+    path: "/folder",
+    component: SettingFolderView,
     meta: { requiresAuth: true },
   },
   {
-    path: "/edit/:id",
-    component: SettingDetail,
+    path: "/file/:id",
+    component: SettingFilesView,
     meta: { requiresAuth: true },
   },
   {
     path: "/logout",
-    component: Logout,
+    component: LogoutView,
     meta: { requiresAuth: true },
   },
   {
     path: "/error",
-    component: ServerError,
+    component: ErrorView,
   },
   {
     path: "/:pathMatch(.*)*",
-    component: NotFound,
+    component: NotFoundView,
   },
 ];
 

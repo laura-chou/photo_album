@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { Folder, FileItem } from "@/types/album";
+import type { Folder, FileItem } from "@/types/album-types";
 import errorImage from "@/assets/error-image.png";
 
 const fileDomain = `${import.meta.env.VITE_APIURL}/file`;

@@ -1,8 +1,4 @@
 <script setup lang="ts">
-defineOptions({
-  name: "NavbarComponent",
-});
-
 import { useRoute } from "vue-router";
 import { computed } from "vue";
 
@@ -59,7 +55,7 @@ const props = withDefaults(defineProps<{ isLoggedIn?: boolean }>(), { isLoggedIn
             >
           </li>
           <li class="nav-item">
-            <router-link class="nav-link" :class="{ active: !isActive }" to="/setting"
+            <router-link class="nav-link" :class="{ active: !isActive }" to="/folder"
               >設定</router-link
             >
           </li>

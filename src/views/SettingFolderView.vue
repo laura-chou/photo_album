@@ -2,13 +2,9 @@
 import { ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { Modal } from "bootstrap";
-import { useAlbumStore } from "@/stores/album";
+import { useAlbumStore } from "@/stores/album-store";
 import { useErrorRedirect } from "@/composables/useErrorRedirect";
 import { useAlert } from "@/composables/useAlert";
-
-defineOptions({
-  name: "SettingPage",
-});
 
 interface EditableFolder {
   _id: string;
@@ -39,7 +35,7 @@ watch(
 );
 
 const goToDetail = (id: string) => {
-  router.push(`/edit/${id}`);
+  router.push(`/file/${id}`);
 };
 
 const deleteFolder = async (folderId: string) => {

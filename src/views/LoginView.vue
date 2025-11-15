@@ -2,17 +2,13 @@
 import axios from "axios";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
-import { useUserStore } from "@/stores/user";
+import { useUserStore } from "@/stores/user-store";
 import { useAlert } from "@/composables/useAlert";
 import { useErrorRedirect } from "@/composables/useErrorRedirect";
 import { useFormValidator } from "@/composables/useFormValidator";
 const { handleError } = useErrorRedirect();
 const { alerts, triggerAlert } = useAlert();
 const { validateRequired, errorMessage } = useFormValidator();
-
-defineOptions({
-  name: "LoginPage",
-});
 
 const router = useRouter();
 const userSore = useUserStore();
@@ -41,7 +37,7 @@ const handleLogin = async () => {
           triggerAlert("帳號或密碼錯誤");
           break;
         default:
-          handleError(error, "login", status);
+          handleError(error, "login");
           break;
       }
     } else {

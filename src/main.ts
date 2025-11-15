@@ -15,10 +15,10 @@ import "swiper/css";
 import "swiper/css/pagination";
 import "@/styles/common.scss";
 
-import Navbar from "@/components/Navbar.vue";
-import CssDoodle from "@/components/CssDoodle.vue";
-import AlertMessage from "@/components/AlertMessage.vue";
-import Loading from "@/components/Loading.vue";
+import NavbarComponent from "@/components/NavbarComponent.vue";
+import CssDoodleComponent from "@/components/CssDoodleComponent.vue";
+import AlertComponent from "@/components/AlertComponent.vue";
+import LoadingComponent from "@/components/LoadingComponent.vue";
 
 const pinia = createPinia();
 pinia.use(piniaPluginPersistedstate);
@@ -28,10 +28,10 @@ const app = createApp(App);
 app.component("VueFeather", VueFeather);
 app.component("VueSwiper", Swiper);
 app.component("SwiperSlide", SwiperSlide);
-app.component("NavbarComponent", Navbar);
-app.component("CssDoodleComponent", CssDoodle);
-app.component("AlertComponent", AlertMessage);
-app.component("LoadingComponent", Loading);
+app.component("NavbarComponent", NavbarComponent);
+app.component("CssDoodleComponent", CssDoodleComponent);
+app.component("AlertComponent", AlertComponent);
+app.component("LoadingComponent", LoadingComponent);
 
 app.use(pinia);
 app.use(router);

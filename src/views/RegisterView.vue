@@ -1,17 +1,13 @@
 <script setup lang="ts">
 import axios from "axios";
 import { ref } from "vue";
-import { useUserStore } from "@/stores/user";
+import { useUserStore } from "@/stores/user-store";
 import { useAlert } from "@/composables/useAlert";
 import { useErrorRedirect } from "@/composables/useErrorRedirect";
 import { useFormValidator } from "@/composables/useFormValidator";
 const { handleError } = useErrorRedirect();
 const { alerts, triggerAlert } = useAlert();
 const { validateRequired, validatePasswordLength, errorMessage } = useFormValidator();
-
-defineOptions({
-  name: "RegisterPage",
-});
 
 const userStore = useUserStore();
 
@@ -30,7 +26,7 @@ const handleRefresh = async () => {
           triggerAlert("請求過多，請稍後再試");
           break;
         default:
-          handleError(error, "refresh", status);
+          handleError(error, "refresh");
       }
     } else {
       handleError(error, "refresh");
@@ -74,7 +70,7 @@ const handleRegister = async () => {
           triggerAlert("使用者已註冊");
           break;
         default:
-          handleError(error, "register", status);
+          handleError(error, "register");
           break;
       }
     } else {

@@ -1,9 +1,3 @@
-<script setup lang="ts">
-defineOptions({
-  name: "LoadingComponent",
-});
-</script>
-
 <template>
   <div class="loading">
     <img src="@/assets/loading.svg" />

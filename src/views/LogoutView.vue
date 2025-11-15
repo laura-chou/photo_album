@@ -1,14 +1,10 @@
 <script setup lang="ts">
 import { onMounted } from "vue";
 import { useRouter } from "vue-router";
-import { useUserStore } from "@/stores/user";
-import { useErrorStore } from "@/stores/error";
+import { useUserStore } from "@/stores/user-store";
+import { useErrorStore } from "@/stores/error-store";
 import { useAlert } from "@/composables/useAlert";
 import { useErrorRedirect } from "@/composables/useErrorRedirect";
-
-defineOptions({
-  name: "LogoutPage",
-});
 
 const { alerts, triggerAlert } = useAlert();
 const { handleError } = useErrorRedirect();

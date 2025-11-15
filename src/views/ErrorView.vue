@@ -2,10 +2,6 @@
 import { onMounted } from "vue";
 import { useRouter } from "vue-router";
 
-defineOptions({
-  name: "ServerError",
-});
-
 const router = useRouter();
 
 onMounted(() => {

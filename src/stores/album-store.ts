@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import axios from "axios";
 import { ref, computed } from "vue";
-import type { Folder } from "@/types/album";
+import type { Folder } from "@/types/album-types";
 import { useFolderProcess } from "@/composables/useFolderProcess";
 
 axios.defaults.withCredentials = true;

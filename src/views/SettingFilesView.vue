@@ -5,7 +5,7 @@ import { useRoute } from "vue-router";
 import { useRouter } from "vue-router";
 import PhotoSwipeLightbox from "photoswipe/lightbox";
 import "photoswipe/dist/photoswipe.css";
-import { useAlbumStore } from "@/stores/album";
+import { useAlbumStore } from "@/stores/album-store";
 import { useErrorRedirect } from "@/composables/useErrorRedirect";
 import { useFolderProcess } from "@/composables/useFolderProcess";
 import { useAlert } from "@/composables/useAlert";
@@ -50,7 +50,7 @@ watch(
 );
 
 const previous = () => {
-  router.push(`/setting`);
+  router.push(`/folder`);
 };
 
 const openFilePicker = () => {
@@ -74,7 +74,7 @@ const handleFileUpload = async (event: Event) => {
           triggerAlert("檔案太大，單檔不得超過 1MB", "error", 1500);
           break;
         default:
-          handleError(error, "handleFileUpload", status);
+          handleError(error, "handleFileUpload");
       }
     } else {
       handleError(error, "handleFileUpload");

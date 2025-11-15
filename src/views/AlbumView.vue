@@ -1,15 +1,11 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { Pagination } from "swiper/modules";
-import { useAlbumStore } from "@/stores/album";
+import { useAlbumStore } from "@/stores/album-store";
 import folderImage from "@/assets/folder.png";
 import emptyfolderImage from "@/assets/empty-folder.png";
-import type { FileItem } from "@/types/album";
+import type { FileItem } from "@/types/album-types";
 import { useFolderProcess } from "@/composables/useFolderProcess";
-
-defineOptions({
-  name: "AlbumPage",
-});
 
 const albumStore = useAlbumStore();
 const { processFolders } = useFolderProcess();
