@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import axios from "axios";
 import PhotoSwipeLightbox from "photoswipe/lightbox";
 import { ref, watch, computed, onMounted } from "vue";
 import { useRoute } from "vue-router";
@@ -10,6 +9,7 @@ import { useAlert } from "@/composables/useAlert";
 import { useErrorRedirect } from "@/composables/useErrorRedirect";
 import { useFolderProcess } from "@/composables/useFolderProcess";
 import { useAlbumStore } from "@/stores/album-store";
+import { useErrorStore } from "@/stores/error-store";
 
 interface EditableFile {
   _id: string;
@@ -22,6 +22,7 @@ interface EditableFile {
 const route = useRoute();
 const router = useRouter();
 const albumStore = useAlbumStore();
+const errorStore = useErrorStore();
 const { handleError } = useErrorRedirect();
 const { processFolders } = useFolderProcess();
 const { alerts, triggerAlert } = useAlert();
@@ -65,20 +66,9 @@ const handleFileUpload = async (event: Event) => {
   try {
     await albumStore.uploadFiles(id, files);
   } catch (error) {
-    if (axios.isAxiosError(error)) {
-      const status = error.response?.status;
-      switch (status) {
-        case 400:
-          triggerAlert("已達上傳上限 (最多 5 個檔案)", "error", 1500);
-          break;
-        case 413:
-          triggerAlert("檔案太大，單檔不得超過 1MB", "error", 1500);
-          break;
-        default:
-          handleError(error, "handleFileUpload");
-      }
-    } else {
-      handleError(error, "handleFileUpload");
+    handleError(error, "handleFileUpload");
+    if (errorStore.message !== "") {
+      triggerAlert(errorStore.message);
     }
   } finally {
     input.value = "";
@@ -243,9 +233,8 @@ const openGallery = (url: string) => {
 }
 
 .alert-custom {
-  top: 75% !important;
-  left: 50%;
-  transform: translate(-60%, -50%);
+  top: unset !important;
+  bottom: 10%;
 }
 
 .table-info th {

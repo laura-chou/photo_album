@@ -37,12 +37,3 @@ onMounted(async () => {
   />
   <LoadingComponent />
 </template>
-
-<style lang="scss" scoped>
-.alert-custom {
-  width: max-content;
-  top: 20%;
-  left: 50%;
-  transform: translate(-50%, -20%);
-}
-</style>

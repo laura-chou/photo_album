@@ -222,8 +222,7 @@ const closeModal = () => {
 }
 
 .alert-custom {
-  top: 75% !important;
-  left: 50%;
-  transform: translate(-60%, -50%);
+  top: unset !important;
+  bottom: 10%;
 }
 </style>

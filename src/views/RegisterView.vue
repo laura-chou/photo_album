@@ -1,16 +1,17 @@
 <script setup lang="ts">
-import axios from "axios";
 import { ref } from "vue";
 
 import { useAlert } from "@/composables/useAlert";
 import { useErrorRedirect } from "@/composables/useErrorRedirect";
 import { useFormValidator } from "@/composables/useFormValidator";
+import { useErrorStore } from "@/stores/error-store";
 import { useUserStore } from "@/stores/user-store";
 const { handleError } = useErrorRedirect();
 const { alerts, triggerAlert } = useAlert();
 const { validateRequired, validatePasswordLength, errorMessage } = useFormValidator();
 
 const userStore = useUserStore();
+const errorStore = useErrorStore();
 
 const account = ref("");
 const password = ref("");
@@ -20,17 +21,9 @@ const handleRefresh = async () => {
   try {
     await userStore.loading();
   } catch (error) {
-    if (axios.isAxiosError(error)) {
-      const status = error.response?.status;
-      switch (status) {
-        case 429:
-          triggerAlert("請求過多，請稍後再試");
-          break;
-        default:
-          handleError(error, "refresh");
-      }
-    } else {
-      handleError(error, "refresh");
+    handleError(error, "refresh");
+    if (errorStore.message !== "") {
+      triggerAlert(errorStore.message);
     }
   }
 };
@@ -59,23 +52,9 @@ const handleRegister = async () => {
     password.value = "";
     captcha.value = "";
   } catch (error) {
-    if (axios.isAxiosError(error)) {
-      const status = error.response?.status;
-      const data = error.response?.data.data;
-      switch (status) {
-        case 400:
-          triggerAlert("驗證碼錯誤");
-          if (data) userStore.captcha = data;
-          break;
-        case 409:
-          triggerAlert("使用者已註冊");
-          break;
-        default:
-          handleError(error, "register");
-          break;
-      }
-    } else {
-      handleError(error, "register");
+    handleError(error, "register");
+    if (errorStore.message !== "") {
+      triggerAlert(errorStore.message);
     }
   }
 };

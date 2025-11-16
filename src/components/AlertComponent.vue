@@ -44,6 +44,9 @@ const iconType = computed(() => {
 <style lang="scss" scoped>
 .alert-custom {
   position: absolute;
-  top: 15%;
+  width: max-content;
+  top: 20%;
+  left: 50%;
+  transform: translate(-50%, -20%);
 }
 </style>
