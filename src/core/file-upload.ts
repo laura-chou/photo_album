@@ -14,14 +14,14 @@ const defaultPath = "photo-album";
 
 export const uploadToFTP = async(
   buffer: Buffer,
-  folderId: string,
+  userId: string,
   filename: string
 ): Promise<void> => {
   const client = new Client();
   const functionName = "uploadToFTP";
 
   if (!convertToBool(process.env.PRD_ENV)) {
-    const fullPath = path.join(defaultPath, folderId);
+    const fullPath = path.join(defaultPath, userId);
     if (!fs.existsSync(fullPath)) {
       fs.mkdirSync(fullPath, { recursive: true });
     }
@@ -42,7 +42,7 @@ export const uploadToFTP = async(
       secure: false
     });
 
-    const remoteFolder = `${defaultPath}/${folderId}/`;
+    const remoteFolder = `${defaultPath}/${userId}/`;
     await client.ensureDir(remoteFolder);
     await client.cd(remoteFolder);
 
@@ -59,7 +59,7 @@ export const uploadToFTP = async(
 };
 
 export const deleteFromFTP = async(
-  folderId: string,
+  userId: string,
   filename?: string
 ): Promise<void> => {
   const client = new Client();
@@ -67,8 +67,8 @@ export const deleteFromFTP = async(
 
   if (!convertToBool(process.env.PRD_ENV)) {
     const targetPath = filename
-      ? path.join(defaultPath, folderId, filename)
-      : path.join(defaultPath, folderId);
+      ? path.join(defaultPath, userId, filename)
+      : path.join(defaultPath, userId);
 
     try {
       await fs.promises.rm(targetPath, { recursive: true, force: true });
@@ -93,7 +93,7 @@ export const deleteFromFTP = async(
       secure: false,
     });
 
-    const remoteBase = `${defaultPath}/${folderId}`;
+    const remoteBase = `${defaultPath}/${userId}`;
 
     if (filename) {
       const remoteFilePath = `${remoteBase}/${filename}`;

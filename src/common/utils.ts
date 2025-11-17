@@ -3,10 +3,8 @@ import moment from "moment-timezone";
 
 export const isJestTest: boolean = typeof jest !== "undefined";
 
-export const getNowDate = (dateStr?: string): Date => {
-  return dateStr
-    ? moment.tz(dateStr.replace(/\//g, "-"), "Asia/Taipei").toDate()
-    : moment().tz("Asia/Taipei").toDate();
+export const getNowDate = (): Date => {
+  return moment().tz("Asia/Taipei").toDate();
 };
 
 export const getDateAfterMonths = (nowDate: Date, months: number): Date => {

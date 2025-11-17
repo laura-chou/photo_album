@@ -8,8 +8,11 @@ import {
 } from "../common/utils";
 import { LogLevel, LogMessage, setLog } from "../core/logger";
 
-
-export const validateContentType = (request: Request, response: Response, functionName: string): boolean => {
+export const validateContentType = (
+  request: Request,
+  response: Response,
+  functionName: string
+): boolean => {
   const contentType: string | undefined = request.headers["content-type"];
   if (contentType !== "application/json") {
     setLog(LogLevel.ERROR, RESPONSE_MESSAGE.INVALID_CONTENT_TYPE, functionName);
@@ -58,13 +61,31 @@ export const validateBodyFields = (
   return true;
 };
 
-export const validateId = (custId: string, response: Response, functionName: string): boolean => {
+export const validateId = (
+  custId: string,
+  response: Response,
+  functionName: string
+): boolean => {
   if (Types.ObjectId.isValid(custId)) {
     return true;
   } else {
     setLog(LogLevel.ERROR, RESPONSE_MESSAGE.INVALID_ID, functionName);
     responseHandler.badRequest(response, "INVALID_ID");
     return false;
+  }
+};
+
+export const validateUserIdFromToken = (
+  userId: string,
+  response: Response,
+  functionName: string
+): boolean => {
+  if (isNullOrEmpty(userId)) {
+    setLog(LogLevel.ERROR, LogMessage.ERROR.TOKENERROR, functionName);
+    responseHandler.unauthorized(response, "TOKEN_INVALID");
+    return false;
+  } else {
+    return true;
   }
 };
 

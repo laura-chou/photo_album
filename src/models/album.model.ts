@@ -7,11 +7,13 @@ import { isNullOrEmpty } from "../common/utils";
 export interface Files {
   customName: string;
   storeName: string;
+  createDate: Date;
 }
 
-interface Folder {
+export interface Folder {
   name: string;
   files: Files[];
+  createDate: Date;
 }
 
 interface IAlbum {
@@ -27,6 +29,10 @@ const filesSchema = new Schema<Files>({
   storeName: { 
     type: String,
     required: true
+  },
+  createDate: {
+    type: Date,
+    required: true
   }
 });
 
@@ -38,6 +44,10 @@ const folderSchema = new Schema<Folder>({
   files: {
     type: [filesSchema],
     default: []
+  },
+  createDate: {
+    type: Date,
+    required: true
   }
 });
 

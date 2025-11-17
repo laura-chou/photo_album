@@ -4,23 +4,20 @@ const base = "/album";
 
 export const ROUTE = {
   ALBUM: base,
-  UPDATE: `${base}/folder`,
 } as const;
 
 interface Files {
-  _id: string;
+  _id?: string;
   customName: string;
   storeName: string;
+  createDate: Date;
 }
 
 interface Folder {
-  _id: string;
+  _id?: string;
   name: string;
   files: Files[];
-}
-
-interface UserAlbumItem {
-  folder: Folder[];
+  createDate: Date;
 }
 
 interface FileItem {
@@ -34,22 +31,19 @@ type UpdateFolderModel = {
   fileId?: string;
 };
 
-export const MOCK_ALBUM: UserAlbumItem[] = [
+export const MOCK_ALBUM: Folder[] = [
   {
-    folder: [
-      {
-        _id: "507f1f77bcf86cd799439011",
-        name: "A folder",
-        files: [
-          { _id: "507f1f77bcf86cd799439012", customName: "customA.jpg", storeName: "storeA.jpg" }
-        ]
-      }
-    ]
+    _id: "507f1f77bcf86cd799439011",
+    name: "A folder",
+    files: [
+      { _id: "507f1f77bcf86cd799439012", customName: "customA.jpg", storeName: "storeA.jpg", createDate: new Date() }
+    ],
+    createDate: new Date()
   }
 ];
 
 export const MOCK_FILE: FileItem[] = [{
-  file: { _id: "507f1f77bcf86cd799439012", customName: "customA.jpg", storeName: "storeA.jpg" }
+  file: { _id: "507f1f77bcf86cd799439012", customName: "customA.jpg", storeName: "storeA.jpg", createDate: new Date() }
 }];
 
 export const MOCK_UPDATE_DATA: UpdateFolderModel = {

@@ -11,5 +11,6 @@ export const userRoutes = (): RouteConfig => {
     router.get("/captcha", validateRateLimit, userController.userCapture);
     router.post("/login", validateLoginRequest, authMiddleware("login"), userController.userLogin);
     router.post("/create", validateRegisterRequest, userController.userCreate);
+    router.post("/logout", authMiddleware("jwt-basic"), userController.userLogout);
   });
 };

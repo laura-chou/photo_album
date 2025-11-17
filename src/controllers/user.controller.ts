@@ -1,13 +1,14 @@
 import bcrypt from "bcrypt";
 import { Request, Response } from "express";
-import jwt from "jsonwebtoken";
 
 import { responseHandler } from "../common/response";
 import { getNowDate, isProductionEnv, setFunctionName } from "../common/utils";
 import { createCaptcha } from "../core/captcha";
+import { getUserIdFromToken, signToken } from "../core/jwt";
 import { LogLevel, LogMessage, setLog } from "../core/logger";
 import User, { IUser } from "../models/user.model";
 
+import { getAlbum } from "./album.controller";
 import * as baseController from "./base.controller";
 
 export const userLogin = setFunctionName(
@@ -15,17 +16,14 @@ export const userLogin = setFunctionName(
     try {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const user = request.user!;
-      const token = jwt.sign(
-        { user: user.userName },
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        process.env.JWT_SECRET!, 
-        { expiresIn: "1h" }
-      );
+      const token = signToken({ user: user._id });
 
       await User.findByIdAndUpdate(
         user._id,
         { token }
       );
+
+      const userAlbum = await getAlbum(user._id);
 
       response.cookie("token", token, {
         httpOnly: true,
@@ -35,12 +33,36 @@ export const userLogin = setFunctionName(
       });
 
       setLog(LogLevel.INFO, LogMessage.SUCCESS, userLogin.name);
-      responseHandler.success(response);
+      responseHandler.success(response, userAlbum);
     } catch (error) {
       baseController.errorHandler(response, error, userLogin.name);
     }
   },
   "userLogin"
+);
+
+export const userLogout = setFunctionName(
+  async(request: Request, response: Response): Promise<void> => {
+    try {
+      const userId = getUserIdFromToken(request);
+      if (userId) {
+        await User.findByIdAndUpdate(
+          userId,
+          { $set: { token: "" } }
+        );
+      }
+      response.clearCookie("token", {
+        httpOnly: true,
+        secure: isProductionEnv(),
+        sameSite: isProductionEnv() ? "none" : "lax",
+      });
+      setLog(LogLevel.INFO, LogMessage.SUCCESS, userLogout.name);
+      responseHandler.success(response);
+    } catch (error) {
+      baseController.errorHandler(response, error, userLogout.name);
+    }
+  },
+  "userLogout"
 );
 
 export const userCreate = setFunctionName(

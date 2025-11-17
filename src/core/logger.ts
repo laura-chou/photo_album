@@ -24,7 +24,8 @@ export const LogMessage = {
     TOOMANYREQUESTS: "Too many requests.",
     FTPFAIL: "FTP upload failed.",
     FILELIMITSIZE: "File size exceeds the limit 1MB.",
-    FILEFORMAT: "Invalid file format."
+    FILEFORMAT: "Invalid file format.",
+    TOKENERROR: "Token decode error."
   }
 } as const;
 
@@ -77,7 +78,7 @@ const logger: winston.Logger = winston.createLogger({
 
 export const setLog = (
   level: LogLevel,
-  message: string,
+  message: string | Error,
   functionName: string = ""
 ) : void => {
   if (!isNullOrEmpty(functionName)) {

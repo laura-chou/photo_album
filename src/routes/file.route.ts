@@ -6,7 +6,8 @@ import { createRoute, RouteConfig } from "./route.utils";
 
 export const fileRoutes = (): RouteConfig => {
   return createRoute("/file", (router) => {
-    router.get("/:folderId/:fileName", authMiddleware("jwt-basic"), fileController.readPhoto);
-    router.post("/upload", authMiddleware("jwt-basic"), upload.array("file"), fileController.uploadPhoto);
+    router.get("/:fileName", authMiddleware("jwt-basic"), fileController.readPhoto);
+    router.post("/upload", authMiddleware("jwt-basic"), upload.array("files"), fileController.uploadPhoto);
+    router.patch("/:fileId", authMiddleware("jwt-basic"), fileController.updateFile);
   });
 };

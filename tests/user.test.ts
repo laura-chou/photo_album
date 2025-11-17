@@ -1,13 +1,16 @@
 import svgCaptcha from "svg-captcha";
 import { v4 as uuidv4 } from "uuid";
 
-import { HTTP_STATUS, RESPONSE_MESSAGE } from "../src/common/constants";
+import { HTTP_STATUS } from "../src/common/constants";
 import * as utils from "../src/common/utils";
+import * as AlbumController from "../src/controllers/album.controller";
 import { setCaptcha } from "../src/core/captcha";
+import * as jwt from "../src/core/jwt";
 import User from "../src/models/user.model";
 
-import { describeServerErrorTests, describeValidationErrorTests } from "./fixtures/testStructures";
-import { createRequest, expectResponse, mockUserFindOne } from "./fixtures/testUtils";
+import { MOCK_ALBUM } from "./fixtures/albumTestConfig";
+import { describeAuthErrorTests, describeServerErrorTests, describeValidationErrorTests } from "./fixtures/testStructures";
+import { createRequest, expectResponse, mockUserFindById, mockUserFindOne } from "./fixtures/testUtils";
 import { ROUTE, MOCK_USER_INFO, MOCK_REGISTER_EXIST_USER, MOCK_REGISTER_NOTEXIST_USER, MOCK_LOGIN_NOTEXIST_USER, MOCK_LOGIN_EXIST_USER, MOCK_CAPTCHA } from "./fixtures/userTestConfig";
 
 
@@ -17,6 +20,7 @@ jest.mock("uuid", () => ({
 
 jest.mock("../src/models/user.model", () => ({
   findOne: jest.fn(),
+  findById: jest.fn(),
   findByIdAndUpdate: jest.fn(),
   updateOne: jest.fn(),
   create: jest.fn()
@@ -35,6 +39,10 @@ const spyOnSvgCaptchaCreate = (): void => {
     text: "abcd",
     data: "<svg>captcha</svg>",
   });
+};
+
+const spyOnGetUserIdFromToken = (): void => {
+  jest.spyOn(jwt, "getUserIdFromToken").mockReturnValue(MOCK_USER_INFO.token);
 };
 
 describe("User API", () => {
@@ -118,7 +126,7 @@ describe("User API", () => {
           HTTP_STATUS.UNAUTHORIZED
         );
     
-        expectResponse.unauthorized(response);
+        expectResponse.unauthorized(response, "WRONG_PASSWORD");
       });
 
       it("should fail if password is incorrect", async() => {
@@ -130,14 +138,14 @@ describe("User API", () => {
           HTTP_STATUS.UNAUTHORIZED
         );
 
-        expectResponse.unauthorized(response);
+        expectResponse.unauthorized(response, "WRONG_PASSWORD");
       });
     });
 
     describe("Success Cases", () => {
       test("should login successfully and return a token", async() => {
         mockUserFindOne();
-
+        jest.spyOn(AlbumController, "getAlbum").mockResolvedValue(MOCK_ALBUM);
         const response = await createRequest.post(
           ROUTE.LOGIN,
           MOCK_LOGIN_EXIST_USER,
@@ -205,7 +213,7 @@ describe("User API", () => {
           HTTP_STATUS.BAD_REQUEST
         );
 
-        expectResponse.badRequest(response, RESPONSE_MESSAGE.INVALID_CAPTCHA);
+        expectResponse.badRequest(response, "INVALID_CAPTCHA");
       });
 
       test("should bad request for expired captcha", async() => {
@@ -218,7 +226,7 @@ describe("User API", () => {
           HTTP_STATUS.BAD_REQUEST
         );
 
-        expectResponse.badRequest(response, RESPONSE_MESSAGE.EXPIRED_CAPTCHA, MOCK_CAPTCHA);
+        expectResponse.badRequest(response, "EXPIRED_CAPTCHA", MOCK_CAPTCHA);
       });
     });
 
@@ -241,6 +249,56 @@ describe("User API", () => {
             mockFn: User.create as jest.Mock,
             setupMocks: (): void => {
               mockUserFindOne(null);
+            }
+          }
+        ]
+      },
+      expectResponse
+    );
+  });
+
+  describe(`POST ${ROUTE.LOGOUT}`, () => {
+    describeAuthErrorTests(
+      ROUTE.LOGOUT,
+      (route, status, tokenInfo) => createRequest.post(route, {}, status, tokenInfo),
+      expectResponse
+    );
+
+    describe("Success Cases", () => {
+      it("should clear cookie and logout user when userId exists", async() => {
+        mockUserFindById();
+        spyOnGetUserIdFromToken();
+        
+        const response = await createRequest.post(
+          ROUTE.LOGOUT,
+          {},
+          HTTP_STATUS.OK,
+          { mockToken: true }
+        );
+        
+        expect(response.headers["set-cookie"]).toBeDefined();
+        expect(response.headers["set-cookie"][0]).toContain("token=");
+        expectResponse.success(response);
+      });
+    });
+
+    describeServerErrorTests(
+      {
+        route: ROUTE.LOGOUT,
+        requestFn: (route: string, body: string | object, status: number) => 
+          createRequest.post(route, body, status, { mockToken: true }),
+        requestBody: {},
+        dbErrorCases: [
+          {
+            name: "User.findById",
+            mockFn: User.findById as jest.Mock
+          },
+          {
+            name: "User.findByIdAndUpdate",
+            mockFn: User.findByIdAndUpdate as jest.Mock,
+            setupMocks: (): void => {
+              mockUserFindById();
+              spyOnGetUserIdFromToken();
             }
           }
         ]

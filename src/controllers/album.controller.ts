@@ -1,13 +1,13 @@
 import { Request, Response } from "express";
-import { Types } from "mongoose";
 
+import { RESPONSE_MESSAGE } from "../common/constants";
 import { responseHandler } from "../common/response";
-import { isNullOrEmpty, setFunctionName } from "../common/utils";
-import { getFilePipeline, getUserAlbumPipeline } from "../core/db";
+import { getNowDate, setFunctionName } from "../common/utils";
+import { toObjectId } from "../core/db";
 import { deleteFromFTP } from "../core/file-upload";
+import { getUserIdFromToken } from "../core/jwt";
 import { LogLevel, LogMessage, setLog } from "../core/logger";
-import Album from "../models/album.model";
-import User from "../models/user.model";
+import Album, { Folder } from "../models/album.model";
 
 import * as baseController from "./base.controller";
 
@@ -17,21 +17,19 @@ export enum FolderAction {
   Create = "create"
 }
 
-export const getAlbum = setFunctionName(
-  async(request: Request, response: Response): Promise<void> => {
-    const userName = request.params.userName;
-
-    try {
-      const album = await User.aggregate(getUserAlbumPipeline(userName));
-
-      setLog(LogLevel.INFO, LogMessage.SUCCESS, getAlbum.name);
-      responseHandler.success(response, album);
-    } catch (error) {
-      baseController.errorHandler(response, error, getAlbum.name);
-    }
-  },
-  "getAlbum"
-);
+export const getAlbum = async(userId: string): Promise<Folder[] | null>  => {
+  try {
+    const result = await Album.findOne({ userId })
+      .sort({ createDate: -1 })
+      .select({ _id: 0, userId: 0 })
+      .exec();
+    setLog(LogLevel.INFO, LogMessage.SUCCESS, "getAlbum");
+    return result?.folder ?? [];
+  } catch (error) {
+    setLog(LogLevel.ERROR, RESPONSE_MESSAGE.SERVER_ERROR, "getAlbum");
+    throw error;
+  }
+};
 
 export const updateFolder = setFunctionName(
   async(request: Request, response: Response): Promise<void> => {
@@ -42,15 +40,9 @@ export const updateFolder = setFunctionName(
     const fields = [
       { key: "action", type: "string" }
     ];
-    const { action, folderName, userName, fileId } = request.body;
-    switch (action) {
-      case FolderAction.Create:
-        fields.push({ key: "userName", type: "string" });
-        fields.push({ key: "folderName", type: "string" });
-        break;
-      case FolderAction.Rename:
-        fields.push({ key: "folderName", type: "string" });
-        break;
+    const { action, folderName } = request.body;
+    if (action !== FolderAction.Delete) {
+      fields.push({ key: "folderName", type: "string" });
     }
 
     if (!baseController.validateBodyFields(request, response, updateFolder.name, fields)) {
@@ -63,78 +55,76 @@ export const updateFolder = setFunctionName(
       return;
     }
 
-    if (action === FolderAction.Delete
-      && !isNullOrEmpty(fileId)
-      && !baseController.validateId(fileId, response, updateFolder.name)
-    ) {
+    const userId = getUserIdFromToken(request);
+    if (!baseController.validateUserIdFromToken) {
       return;
     }
 
     try {
       if (action === FolderAction.Create) {
-        const userId = await User.findOne({ userName }).select("_id").lean().then(u => u?._id);
-        if (userId) {
-          const album = await Album.findOne({ userId });
-          if (album) {
-            album.folder.push({
-              name: folderName,
-              files: []
-            });
-            await album.save();
-          } else {
-            await Album.create({
-              userId,
-              folder: [
-                {
-                  name: folderName,
-                  files: []
-                }
-              ]
-            });
+        const album = await Album.findOne({ userId });
+        if (album) {
+          if (album.folder.length > 5) {
+            setLog(LogLevel.ERROR, RESPONSE_MESSAGE.FOLDER_LIMIT, updateFolder.name);
+            responseHandler.badRequest(response, "FOLDER_LIMIT");
+            return;
           }
+          album.folder.push({
+            name: folderName,
+            files: [],
+            createDate: getNowDate()
+          });
+          await album.save();
+        } else {
+          await Album.create({
+            userId,
+            folder: [
+              {
+                name: folderName,
+                files: [],
+                createDate: getNowDate()
+              }
+            ]
+          });
         }
       } else if (action === FolderAction.Rename) {
         await Album.updateOne(
           {
-            "folder._id": new Types.ObjectId(folderId)
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            userId: toObjectId(userId!),
+            "folder._id": toObjectId(folderId)
           },
           {
             $set: {
-              "folder.$.name": folderName
+              "folder.$[f].name": folderName
             }
-          });
-      } else if (action === FolderAction.Delete) {
-        if (!isNullOrEmpty(fileId)) {
-          const result = await Album.aggregate(getFilePipeline(fileId));
-          if (!result || result.length === 0 ) {
-            const message = `${LogMessage.ERROR.NOTFOUND}, \n{"action":${action},"folderId":${folderId}, "fileId":${fileId}}`;
-            setLog(LogLevel.ERROR, message, updateFolder.name);
-            responseHandler.notFound(response);
-            return;
+          },
+          {
+            arrayFilters: [{ "f._id": toObjectId(folderId) }]
           }
-          const storeName = result[0]?.file?.storeName;
-          await Album.updateOne(
-            { "folder.files._id": fileId },
-            { $pull: { "folder.$[].files": { _id: fileId } } }
-          );
-          await deleteFromFTP(folderId, storeName);
-        } else {
-          await Album.updateOne(
-            {
-              "folder._id": new Types.ObjectId(folderId)
-            },
-            {
-              $pull: {
-                folder: { _id: new Types.ObjectId(folderId) }
-              }
+        );
+      } else if (action === FolderAction.Delete) {
+        await Album.updateOne(
+          {
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            userId: toObjectId(userId!), 
+            "folder._id": toObjectId(folderId)
+          },
+          {
+            $pull: {
+              folder: { _id: toObjectId(folderId) }
             }
-          );
-          await deleteFromFTP(folderId);
-        }
+          }
+        );
+        await deleteFromFTP(folderId);
       }
+      
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const userAlbum = await getAlbum(userId!);
+      
       const message = `${LogMessage.SUCCESS}, action: ${action}`;
       setLog(LogLevel.INFO, message, updateFolder.name);
-      responseHandler.success(response);
+      responseHandler.success(response, userAlbum);
     } catch (error) {
       baseController.errorHandler(response, error, updateFolder.name);
     }

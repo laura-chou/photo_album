@@ -1,8 +1,8 @@
 import request from "supertest";
 
-import { HTTP_STATUS, RESPONSE_MESSAGE } from "../../src/common/constants";
+import { HTTP_STATUS } from "../../src/common/constants";
 
-import { expectResponse, mockUserFindOne } from "./testUtils";
+import { expectResponse, mockUserFindById, mockUserFindOne } from "./testUtils";
 
 type TokenInfo = {
   showToken: boolean;
@@ -11,13 +11,17 @@ type TokenInfo = {
   isExpired?: boolean;
 };
 
-type AuthTestCase = [string, Partial<TokenInfo>, string, boolean?];
+type AuthTestCase = [
+  description: string, 
+  tokenInfo: Partial<TokenInfo>, 
+  expectedMessage: "TOKEN_INVALID" | "WRONG_PASSWORD",
+  isUserNull: boolean];
 
 type ValidationTestCase = [
   description: string,
   requestBody: Record<string, unknown>,
   isSetJson: boolean,
-  expectedMessage: string
+  expectedMessage: "CONTENT_TYPE" | "JSON_KEY" | "JSON_FORMAT"
 ];
 
 interface ValidationConfig<T extends Record<string, unknown>> {
@@ -103,7 +107,7 @@ export const describeValidationParamsIdTest = (
         HTTP_STATUS.BAD_REQUEST,
         {}
       );
-      expectResponseFn.badRequest(response, RESPONSE_MESSAGE.INVALID_ID);
+      expectResponseFn.badRequest(response, "INVALID_ID");
     });
   });
 };
@@ -118,25 +122,20 @@ export const describeAuthErrorTests = (
   expectResponseFn: typeof expectResponse
 ): void => {
   const authTestCases: AuthTestCase[] = [
-    ["no JWT", { showToken: false }, "No auth token"],
-    ["invalid JWT", { isInvalid: true }, "jwt malformed"],
-    ["expired JWT", { isExpired: true }, "jwt expired"],
-    ["User in JWT does not exist", { existUser: false, showToken: true }, RESPONSE_MESSAGE.USER_NOT_EXIST, true]
+    ["no JWT", { showToken: false }, "TOKEN_INVALID", false],
+    ["invalid JWT", { isInvalid: true }, "TOKEN_INVALID", false],
+    ["expired JWT", { isExpired: true }, "TOKEN_INVALID", false],
+    ["User in JWT does not exist", { existUser: false, showToken: true }, "WRONG_PASSWORD", true]
   ];
 
   describe("Authentication Error Cases", () => {
     test.each(authTestCases)(
       "should fail if %s",
-      async(
-        _: string,
-        tokenInfo: Partial<TokenInfo>,
-        expectedMessage: string,
-        isUserNull: boolean = false
-      ) => {
+      async(_, tokenInfo, expectedMessage, isUserNull) => {
         if (isUserNull) {
-          mockUserFindOne(null);
+          mockUserFindById(null);
         } else {
-          mockUserFindOne();
+          mockUserFindById();
         }
         const response = await requestFn(route, HTTP_STATUS.UNAUTHORIZED, tokenInfo);
         expectResponseFn.unauthorized(response, expectedMessage);
@@ -151,9 +150,9 @@ export const describeValidationErrorTests = <T extends ValidationBaseModel>(
 ): void => {
   describe("Validation Error Cases", () => {
     const validationTestCases: ValidationTestCase[] = [
-      ["invalid Content-Type", config.validBody, false, RESPONSE_MESSAGE.INVALID_CONTENT_TYPE],
-      ["missing key in JSON body", { wrongKey: "value" }, true, RESPONSE_MESSAGE.INVALID_JSON_KEY],
-      ["invalid data type", generateInvalidTypeBody(config.validBody), true, RESPONSE_MESSAGE.INVALID_JSON_FORMAT]
+      ["invalid Content-Type", config.validBody, false, "CONTENT_TYPE"],
+      ["missing key in JSON body", { wrongKey: "value" }, true, "JSON_KEY"],
+      ["invalid data type", generateInvalidTypeBody(config.validBody), true, "JSON_FORMAT"]
     ];
 
     test.each(validationTestCases)(

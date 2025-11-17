@@ -1,22 +1,27 @@
 import { Response } from "express";
 
-import { LogMessage } from "../core/logger";
-
 import { HTTP_STATUS, RESPONSE_MESSAGE } from "./constants";
 
-const MESSAGE_MAP = {
+const BADREQUEST_MESSAGE_MAP = {
   CONTENT_TYPE: RESPONSE_MESSAGE.INVALID_CONTENT_TYPE,
   JSON_KEY: RESPONSE_MESSAGE.INVALID_JSON_KEY,
   JSON_FORMAT: RESPONSE_MESSAGE.INVALID_JSON_FORMAT,
   INVALID_ID: RESPONSE_MESSAGE.INVALID_ID,
   INVALID_CAPTCHA: RESPONSE_MESSAGE.INVALID_CAPTCHA,
   EXPIRED_CAPTCHA: RESPONSE_MESSAGE.EXPIRED_CAPTCHA,
-  UPLOAD_LIMIT: RESPONSE_MESSAGE.UPLOAD_LIMIT,
+  FILE_LIMIT: RESPONSE_MESSAGE.FILE_LIMIT,
+  FOLDER_LIMIT: RESPONSE_MESSAGE.FOLDER_LIMIT,
   NO_FILE: RESPONSE_MESSAGE.NO_FILE,
   LIMIT_FORMAT: RESPONSE_MESSAGE.LIMIT_FORMAT,
 } as const;
 
-type BadRequestType = keyof typeof MESSAGE_MAP;
+const UNAUTHORIZED_MESSAGE_MAP = {
+  TOKEN_INVALID: RESPONSE_MESSAGE.TOKEN_INVALID,
+  WRONG_PASSWORD: RESPONSE_MESSAGE.WRONG_PASSWORD
+} as const;
+
+type BadRequestType = keyof typeof BADREQUEST_MESSAGE_MAP;
+type UnAuthorizedType = keyof typeof UNAUTHORIZED_MESSAGE_MAP;
 
 interface ApiResponse<T> {
   status: number
@@ -28,11 +33,13 @@ const sendResponse = <T>(
   res: Response,
   status: number,
   message: string,
-  data?: T
+  data?: T,
+  errorType?: string
 ): void => {
   const response: ApiResponse<T> = {
     status,
     message,
+    ...(errorType && { errorType }),
     ...(data !== undefined && { data })
   };
   res.status(status).json(response);
@@ -62,8 +69,9 @@ export const responseHandler = {
     sendResponse(
       res, 
       HTTP_STATUS.BAD_REQUEST, 
-      MESSAGE_MAP[type],
-      data
+      BADREQUEST_MESSAGE_MAP[type],
+      data,
+      type
     );
   },
 
@@ -75,11 +83,13 @@ export const responseHandler = {
     );
   },
 
-  unauthorized(res: Response, message: string = LogMessage.ERROR.UNKNOWN): void {
+  unauthorized(res: Response, type: UnAuthorizedType): void {
     sendResponse(
       res,
       HTTP_STATUS.UNAUTHORIZED,
-      message
+      UNAUTHORIZED_MESSAGE_MAP[type],
+      undefined,
+      type
     );
   },
 

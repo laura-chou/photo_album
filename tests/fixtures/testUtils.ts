@@ -11,6 +11,7 @@ import { MOCK_USER_INFO } from "./userTestConfig";
 
 interface TokenOptions {
   showToken: boolean;
+  mockToken: boolean;
   isExpired: boolean;
   isInvalid: boolean;
   existUser: boolean;
@@ -18,10 +19,32 @@ interface TokenOptions {
 
 const defaultTokenOptions: Required<TokenOptions> = {
   showToken: true,
+  mockToken: false,
   existUser: true,
   isExpired: false,
   isInvalid: false
 };
+
+const BADREQUEST_MESSAGE_MAP = {
+  CONTENT_TYPE: RESPONSE_MESSAGE.INVALID_CONTENT_TYPE,
+  JSON_KEY: RESPONSE_MESSAGE.INVALID_JSON_KEY,
+  JSON_FORMAT: RESPONSE_MESSAGE.INVALID_JSON_FORMAT,
+  INVALID_ID: RESPONSE_MESSAGE.INVALID_ID,
+  INVALID_CAPTCHA: RESPONSE_MESSAGE.INVALID_CAPTCHA,
+  EXPIRED_CAPTCHA: RESPONSE_MESSAGE.EXPIRED_CAPTCHA,
+  FILE_LIMIT: RESPONSE_MESSAGE.FILE_LIMIT,
+  FOLDER_LIMIT: RESPONSE_MESSAGE.FOLDER_LIMIT,
+  NO_FILE: RESPONSE_MESSAGE.NO_FILE,
+  LIMIT_FORMAT: RESPONSE_MESSAGE.LIMIT_FORMAT,
+} as const;
+
+const UNAUTHORIZED_MESSAGE_MAP = {
+  TOKEN_INVALID: RESPONSE_MESSAGE.TOKEN_INVALID,
+  WRONG_PASSWORD: RESPONSE_MESSAGE.WRONG_PASSWORD
+} as const;
+
+type BadRequestType = keyof typeof BADREQUEST_MESSAGE_MAP;
+type UnAuthorizedType = keyof typeof UNAUTHORIZED_MESSAGE_MAP;
 
 const attachTokenCookie = (req: Request, options: TokenOptions): void => {
   if (!options.showToken) return;
@@ -30,22 +53,27 @@ const attachTokenCookie = (req: Request, options: TokenOptions): void => {
     user: options.existUser ? "testuser" : "notExistUser",
   };
 
-  const expiresIn = options.isExpired ? -1 : "1h";
+  const signOptions: jwt.SignOptions = {};
+  if (options.isExpired) signOptions.expiresIn = -1;
 
-  const validToken = jwt.sign(
+  const generateToken = jwt.sign(
     payload,
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     process.env.JWT_SECRET!,
-    { expiresIn }
+    signOptions
   );
 
-  const token = options.isInvalid ? "invalidtoken" : validToken;
+  const token = options.mockToken ? MOCK_USER_INFO.token : generateToken;
 
-  req.set("Cookie", [`token=${token}`]);
+  req.set("Cookie", [`token=${options.isInvalid ? "invalidtoken" : token}`]);
 };
 
 export const mockUserFindOne = (data: object | null = MOCK_USER_INFO): void => {
   (User.findOne as jest.Mock).mockResolvedValue(data);
+};
+
+export const mockUserFindById = (data: object | null = MOCK_USER_INFO): void => {
+  (User.findById as jest.Mock).mockResolvedValue(data);
 };
 
 export const mockUserFindOneOnceAndChain = (data: object | null = MOCK_USER_INFO): void => {
@@ -102,8 +130,8 @@ export const createRequest = {
       .post(route)
       .set("Content-Type", setContentType)
       .send(body);
-    
-      attachTokenCookie(req, mergedTokenOptions);
+
+    attachTokenCookie(req, mergedTokenOptions);
     
     return req
       .expect("Content-Type", expectContentType)
@@ -179,11 +207,12 @@ export const expectResponse = {
     });
   },
 
-  badRequest: (response: Response, message: string, data?: string | object): void => {
+  badRequest: (response: Response, type: BadRequestType, data?: string | object, ): void => {
     expect(response.body).toEqual({
       status: HTTP_STATUS.BAD_REQUEST,
-      message,
-      data
+      message: BADREQUEST_MESSAGE_MAP[type],
+      data,
+      errorType: type
     });
   },
 
@@ -207,10 +236,11 @@ export const expectResponse = {
 
   unauthorized: (
     response: Response,
-    message: string = RESPONSE_MESSAGE.WRONG_PASSWORD): void => {
+    type: UnAuthorizedType): void => {
     expect(response.body).toEqual({
       status: HTTP_STATUS.UNAUTHORIZED,
-      message: message
+      message: UNAUTHORIZED_MESSAGE_MAP[type],
+      errorType: type
     });
   },
 

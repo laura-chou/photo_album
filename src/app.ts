@@ -74,7 +74,7 @@ app.use((error: Error, _request: Request, response: Response, _next: NextFunctio
         responseHandler.badRequest(response, "LIMIT_FORMAT");
         break;
       default:
-        setLog(LogLevel.ERROR, error.message);
+        setLog(LogLevel.ERROR, error);
         responseHandler.forbidden(response);
         break;
     }

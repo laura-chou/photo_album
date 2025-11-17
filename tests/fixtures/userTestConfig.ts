@@ -2,6 +2,7 @@ const base = "/user";
 
 export const ROUTE = {
   LOGIN: `${base}/login`,
+  LOGOUT: `${base}/logout`,
   CREATE: `${base}/create`,
   CAPTCHA: `${base}/captcha`
 } as const;
@@ -23,7 +24,6 @@ interface CaptchaInfo {
   svg: string;
 }
 
-
 interface UserAuthInfo {
   _id: string;
   userName: string;
@@ -40,7 +40,7 @@ export const MOCK_USER_INFO: UserAuthInfo = {
   _id: "abc123",
   userName: "testuser",
   password: "$2b$12$Vq/jVzpDcq0h/oDw6.9a5OTDbMI5oLygA0HUxNStwP3We550BoFci",
-  token: "token"
+  token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoidGVzdHVzZXIiLCJpYXQiOjE3NjM0MDIyNzd9.ObH_7KNAR9PdJAqTYP0PtGEsv-8YM3vM98g5CSHis2A"
 };
 
 export const MOCK_LOGIN_EXIST_USER: LoginRequest = {

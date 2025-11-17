@@ -6,21 +6,30 @@ import { v4 as uuidv4 } from "uuid";
 
 import { HTTP_STATUS, RESPONSE_MESSAGE } from "../common/constants";
 import { responseHandler } from "../common/response";
-import { convertToBool, setFunctionName } from "../common/utils";
-import { getFolderFilesCountPipeline } from "../core/db";
-import { uploadToFTP } from "../core/file-upload";
+import { convertToBool, getNowDate, isNullOrEmpty, setFunctionName } from "../common/utils";
+import { getFilePipeline, getFilesCountPipeline, toObjectId } from "../core/db";
+import { deleteFromFTP, uploadToFTP } from "../core/file-upload";
+import { getUserIdFromToken } from "../core/jwt";
 import { LogLevel, LogMessage, setLog } from "../core/logger";
 import Album, { Files } from "../models/album.model";
 
+import { FolderAction, getAlbum } from "./album.controller";
 import * as baseController from "./base.controller";
 
 export const readPhoto = setFunctionName(
   async(request: Request, response: Response): Promise<void> => {
-    const folderId = request.params.folderId;
     const fileName = request.params.fileName;
 
+    const userId = getUserIdFromToken(request);
+    if (isNullOrEmpty(userId)) {
+      setLog(LogLevel.ERROR, LogMessage.ERROR.TOKENERROR, readPhoto.name);
+      responseHandler.unauthorized(response, "TOKEN_INVALID");
+      return;
+    }
+    
     if (!convertToBool(process.env.PRD_ENV)) {
-      const localPath = path.join(process.cwd(), "photo-album", folderId, fileName);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const localPath = path.join(process.cwd(), "photo-album", userId!, fileName);
       try {
         await fs.access(localPath);
         setLog(LogLevel.INFO, LogMessage.SUCCESS, readPhoto.name);
@@ -34,7 +43,7 @@ export const readPhoto = setFunctionName(
       }
     }
 
-    const ftpUrl = `http://${process.env.FTP_HOST}/${process.env.FTP_USER}/photo-album/${folderId}/${fileName}`;
+    const ftpUrl = `http://${process.env.FTP_HOST}/${process.env.FTP_USER}/photo-album/${userId}/${fileName}`;
     response.status(HTTP_STATUS.FOUND)
       .location(ftpUrl)
       .type("html")
@@ -71,19 +80,26 @@ export const uploadPhoto = setFunctionName(
       return;
     }
 
+    const userId = getUserIdFromToken(request);
+    if (!baseController.validateUserIdFromToken) {
+      return;
+    }
+
     try {
-      const result = await Album.aggregate(getFolderFilesCountPipeline(folderId));
-      if (!result || result.length === 0 ) {
-        const message = `${LogMessage.ERROR.NOTFOUND}, folderId: ${folderId}`;
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const [result] = await Album.aggregate(getFilesCountPipeline(userId!, folderId));
+      if (!result) {
+        const message = `${LogMessage.ERROR.NOTFOUND}, userId: ${userId}`;
         setLog(LogLevel.ERROR, message, uploadPhoto.name);
         responseHandler.notFound(response);
         return;
       }
-      const currentFileCount = result[0]?.fileCount;
-      if (files.length + currentFileCount > 3) {
+
+      const currentFileCount = result.fileCount;
+      if (files.length + currentFileCount > 5) {
         files.forEach(file => file.buffer = Buffer.alloc(0));
-        setLog(LogLevel.ERROR, RESPONSE_MESSAGE.UPLOAD_LIMIT, uploadPhoto.name);
-        responseHandler.badRequest(response, "UPLOAD_LIMIT");
+        setLog(LogLevel.ERROR, RESPONSE_MESSAGE.FILE_LIMIT, uploadPhoto.name);
+        responseHandler.badRequest(response, "FILE_LIMIT");
         return;
       }
       
@@ -93,23 +109,114 @@ export const uploadPhoto = setFunctionName(
         const filename = `${uuidv4()}.${ext}`;
         newFiles.push(
           {
-            customName: file.originalname,
-            storeName: filename
+            customName: file.originalname.split(".").join("."),
+            storeName: filename,
+            createDate: getNowDate()
           }
         );
-        await uploadToFTP(file.buffer, folderId, filename);
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        await uploadToFTP(file.buffer, userId!, filename);
       }
 
       await Album.updateOne(
-        { "folder._id": folderId },
+        { 
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          userId: toObjectId(userId!),
+          "folder._id": toObjectId(folderId), 
+        },
         { $push: { "folder.$.files": { $each: newFiles } } }
       );
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const userAlbum = await getAlbum(userId!);
 
       setLog(LogLevel.INFO, LogMessage.SUCCESS, uploadPhoto.name);
-      responseHandler.success(response);
+      responseHandler.success(response, userAlbum);
     } catch (error) {
       baseController.errorHandler(response, error, uploadPhoto.name);
     }
   },
   "uploadPhoto"
+);
+
+
+export const updateFile = setFunctionName(
+  async(request: Request, response: Response): Promise<void> => {
+    const fileId = request.params.fileId;
+    if (!baseController.validateId(fileId, response, updateFile.name)) {
+      return;
+    }
+    
+    if (!baseController.validateContentType(request, response, updateFile.name)) {
+      return;
+    }
+
+    const fields = [
+      { key: "action", type: "string" }
+    ];
+    const { action, fileName } = request.body;
+    if (action === FolderAction.Rename) {
+      fields.push({ key: "fileName", type: "string" });
+    }
+    if (!baseController.validateBodyFields(request, response, updateFile.name, fields)) {
+      return;
+    }
+
+    const userId = getUserIdFromToken(request);
+    if (!baseController.validateUserIdFromToken) {
+      return;
+    }
+
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const albumAggre = await Album.aggregate(getFilePipeline(userId!, fileId));
+      if (!albumAggre || albumAggre.length === 0 ) {
+        const message = `${LogMessage.ERROR.NOTFOUND}, \n{"action":${action}, "userId":${userId}, "fileId":${fileId}}`;
+        setLog(LogLevel.ERROR, message, updateFile.name);
+        responseHandler.notFound(response);
+        return;
+      }
+      const folderId = albumAggre[0].folderId;
+
+      if (action === FolderAction.Rename) {
+        await Album.updateOne(
+          {
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            userId: toObjectId(userId!),
+            "folder._id": toObjectId(folderId),
+            "folder.files._id": toObjectId(fileId)
+          },
+          {
+            $set: {
+              "folder.$.files.$[file].customName": fileName
+            }
+          },
+          {
+            arrayFilters: [{ "file._id": toObjectId(fileId) }]
+          }
+        );
+      } else if (action === FolderAction.Delete) {
+        const storeName = albumAggre[0].file.storeName;
+        await Album.updateOne(
+          {
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            userId: toObjectId(userId!), 
+            "folder._id": toObjectId(folderId),
+            "folder.files._id": fileId
+          },
+          { $pull: { "folder.$.files": { _id: toObjectId(fileId) } } }
+        );
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        await deleteFromFTP(userId!, storeName);
+      }
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const userAlbum = await getAlbum(userId!);
+      
+      const message = `${LogMessage.SUCCESS}, action: ${action}`;
+      setLog(LogLevel.INFO, message, updateFile.name);
+      responseHandler.success(response, userAlbum);
+    } catch (error) {
+      baseController.errorHandler(response, error, updateFile.name);
+    }
+  },
+  "updateFile"
 );

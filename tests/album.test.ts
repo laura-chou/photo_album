@@ -2,7 +2,7 @@ import { HTTP_STATUS } from "../src/common/constants";
 import Album from "../src/models/album.model";
 import User from "../src/models/user.model";
 
-import { MOCK_ALBUM, MOCK_FILE, MOCK_CREATE_DATA,
+import { MOCK_FILE, MOCK_CREATE_DATA,
   MOCK_DELETE_FOLDER_DATA, MOCK_DELETE_FILE_DATA, MOCK_DELETE_INVALID_DATA,
   MOCK_UPDATE_DATA, ROUTE } from "./fixtures/albumTestConfig";
 import { describeAuthErrorTests, describeServerErrorTests, describeValidationErrorTests, describeValidationParamsIdTest } from "./fixtures/testStructures";
@@ -22,10 +22,6 @@ jest.mock("../src/models/album.model", () => ({
   aggregate: jest.fn()
 }));
 
-const mockUserAggregate = (data: Array<object>): void => {
-  (User.aggregate as jest.Mock).mockResolvedValue(data);
-};
-
 const mockAlbumAggregate = (data: Array<object> | null): void => {
   (Album.aggregate as jest.Mock).mockResolvedValue(data);
 };
@@ -36,57 +32,8 @@ describe("Album API", () => {
     jest.resetAllMocks();
   });
 
-  describe(`GET ${ROUTE.ALBUM}/:userName`, () => {
-    const route = `${ROUTE.ALBUM}/userName`;
-
-    describeAuthErrorTests(
-      route,
-      (route, status, tokenInfo) => createRequest.get(route, status, tokenInfo),
-      expectResponse
-    );
-
-    describe("Success Cases", () => {
-      test("should return user album data with valid JWT", async() => {
-        mockUserFindOne();
-        mockUserAggregate(MOCK_ALBUM);
-
-        const response = await createRequest.get(route, HTTP_STATUS.OK);
-        expectResponse.success(response, MOCK_ALBUM);
-      });
-
-      test("should return empty data when no data found", async() => {
-        mockUserFindOne();
-        mockUserAggregate([]);
-
-        const response = await createRequest.get(route, HTTP_STATUS.OK);
-        expectResponse.success(response, []);
-      });
-    });
-
-    describeServerErrorTests(
-      {
-        route: route,
-        requestFn: createRequest.get,
-        dbErrorCases: [
-          {
-            name: "User.findOne",
-            mockFn: User.findOne as jest.Mock
-          },
-          {
-            name: "User.aggregate",
-            mockFn: User.aggregate as jest.Mock,
-            setupMocks: (): void => {
-              mockUserFindOne();
-            }
-          }
-        ]
-      },
-      expectResponse
-    );
-  });
-
-  describe(`PATCH ${ROUTE.UPDATE}/:folderId`, () => {
-    const route = `${ROUTE.UPDATE}/507f1f77bcf86cd799439011`;
+  describe(`PATCH ${ROUTE.ALBUM}/:folderId`, () => {
+    const route = `${ROUTE.ALBUM}/507f1f77bcf86cd799439011`;
 
     describeAuthErrorTests(
       route,
@@ -104,7 +51,7 @@ describe("Album API", () => {
     );
 
     describeValidationParamsIdTest(
-      `${ROUTE.UPDATE}/invalid-id`,
+      `${ROUTE.ALBUM}/invalid-id`,
       (route, status, tokenInfo) => createRequest.patch(route, MOCK_UPDATE_DATA, status, tokenInfo),
       expectResponse,
       "Action Rename Validation Id Parameter"

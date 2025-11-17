@@ -10,7 +10,7 @@ if (isNullOrEmpty(process.env.DBURL)) {
   throw new Error(RESPONSE_MESSAGE.ENV_ERROR);
 }
 
-const toObjectId = (idStr: string): Types.ObjectId => {
+export const toObjectId = (idStr: string): Types.ObjectId => {
   return new Types.ObjectId(idStr);
 };
 
@@ -26,58 +26,42 @@ export const connectDB = async(): Promise<void> => {
   }
 };
 
-const lookupAlbum = {
-  $lookup: {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    from: process.env.COLLECTION_ALBUM!,
-    localField: "_id",
-    foreignField: "userId",
-    as: "albums"
-  }
-};
-
-export const getUserAlbumPipeline = (userName: string): PipelineStage[] => [
+export const getFilesCountPipeline = (userId: string, folderId: string): PipelineStage[] => [
   {
     $match: {
-      userName: userName
+      userId: toObjectId(userId),
+      "folder._id": toObjectId(folderId)
     }
   },
-  lookupAlbum,
-  { $unwind: "$albums" },
+  { 
+    $unwind: "$folder" 
+  },
+  {
+    $match: {
+      "folder._id": toObjectId(folderId)
+    }
+  },
   {
     $project: {
       _id: 0,
-      folder: "$albums.folder"
-    }
-  }
-];
-
-export const getFolderFilesCountPipeline = (folderId: string): PipelineStage[] => [
-  { $unwind: "$folder" },
-  { 
-    $match: { 
-      "folder._id": toObjectId(folderId) 
-    }
-  },
-  { 
-    $project: { 
-      _id: 0,
       fileCount: { $size: "$folder.files" }
-    } 
+    }
   }
 ];
 
-export const getFilePipeline = (fileId: string): PipelineStage[] => [
+export const getFilePipeline = (userId: string, fileId: string): PipelineStage[] => [
   { $unwind: "$folder" },
   { $unwind: "$folder.files" },
   { 
-    $match: { 
+    $match: {
+      "userId": toObjectId(userId),
       "folder.files._id": toObjectId(fileId) 
     } 
   },
   { 
     $project: { 
       _id: 0,
+      folderId: "$folder._id",
       file: "$folder.files"
     }
   }
