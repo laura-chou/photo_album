@@ -37,7 +37,7 @@ export const MOCK_CAPTCHA: CaptchaInfo = {
 };
 
 export const MOCK_USER_INFO: UserAuthInfo = { 
-  _id: "abc123",
+  _id: "507f1f77bcf86cd799439012",
   userName: "testuser",
   password: "$2b$12$Vq/jVzpDcq0h/oDw6.9a5OTDbMI5oLygA0HUxNStwP3We550BoFci",
   token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoidGVzdHVzZXIiLCJpYXQiOjE3NjM0MDIyNzd9.ObH_7KNAR9PdJAqTYP0PtGEsv-8YM3vM98g5CSHis2A"

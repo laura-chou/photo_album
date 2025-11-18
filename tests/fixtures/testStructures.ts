@@ -2,26 +2,19 @@ import request from "supertest";
 
 import { HTTP_STATUS } from "../../src/common/constants";
 
-import { expectResponse, mockUserFindById, mockUserFindOne } from "./testUtils";
-
-type TokenInfo = {
-  showToken: boolean;
-  existUser?: boolean;
-  isInvalid?: boolean;
-  isExpired?: boolean;
-};
+import { TokenOptions, BadRequestType, UnAuthorizedType, expectResponse, mockUserFindById } from "./testUtils";
 
 type AuthTestCase = [
   description: string, 
-  tokenInfo: Partial<TokenInfo>, 
-  expectedMessage: "TOKEN_INVALID" | "WRONG_PASSWORD",
+  tokenInfo: Partial<TokenOptions>, 
+  expectedMessage: UnAuthorizedType,
   isUserNull: boolean];
 
 type ValidationTestCase = [
   description: string,
   requestBody: Record<string, unknown>,
   isSetJson: boolean,
-  expectedMessage: "CONTENT_TYPE" | "JSON_KEY" | "JSON_FORMAT"
+  expectedMessage: BadRequestType
 ];
 
 interface ValidationConfig<T extends Record<string, unknown>> {
@@ -31,7 +24,7 @@ interface ValidationConfig<T extends Record<string, unknown>> {
     route: string,
     body: Partial<T> | Record<string, unknown>,
     status: number,
-    tokenInfo?: Partial<TokenInfo>,
+    tokenInfo?: Partial<TokenOptions>,
     isSetJson?: boolean
   ) => Promise<request.Response>;
 }
@@ -39,14 +32,14 @@ interface ValidationConfig<T extends Record<string, unknown>> {
 type GetRequestFunction = (
   route: string,
   status: number,
-  tokenInfo?: Partial<TokenInfo>
+  tokenInfo?: Partial<TokenOptions>
 ) => Promise<request.Response>;
 
 type ModifyRequestFunction = (
   route: string,
   body: string | object,
   status: number,
-  tokenInfo?: Partial<TokenInfo>
+  tokenInfo?: Partial<TokenOptions>
 ) => Promise<request.Response>;
 
 interface ServerErrorConfig {
@@ -93,19 +86,19 @@ export const describeValidationParamsIdTest = (
   requestFn: (
     route: string,
     status: number,
-    tokenInfo?: Partial<TokenInfo>
+    tokenInfo?: Partial<TokenOptions>
   ) => Promise<request.Response>,
   expectResponseFn: typeof expectResponse,
   title = "Validation Id Parameter"
 ): void => {
   describe(title, () => {
     test("should return 400 if Id format is invalid", async() => {
-      mockUserFindOne();
-      
+      mockUserFindById();
+
       const response = await requestFn(
         route,
         HTTP_STATUS.BAD_REQUEST,
-        {}
+        { mockToken: true }
       );
       expectResponseFn.badRequest(response, "INVALID_ID");
     });
@@ -117,7 +110,7 @@ export const describeAuthErrorTests = (
   requestFn: (
     route: string,
     status: number,
-    tokenInfo?: Partial<TokenInfo>
+    tokenInfo?: Partial<TokenOptions>
   ) => Promise<request.Response>,
   expectResponseFn: typeof expectResponse
 ): void => {
@@ -145,7 +138,7 @@ export const describeAuthErrorTests = (
 };
 
 export const describeValidationErrorTests = <T extends ValidationBaseModel>(
-  config: ValidationConfig<T> & { includeInvalidLogicTest?: boolean },
+  config: ValidationConfig<T>,
   expectResponseFn: typeof expectResponse
 ): void => {
   describe("Validation Error Cases", () => {
@@ -158,13 +151,12 @@ export const describeValidationErrorTests = <T extends ValidationBaseModel>(
     test.each(validationTestCases)(
       "should bad request for %s",
       async(_, requestBody, isSetJson, expectedMessage) => {
-        mockUserFindOne();
-
+        mockUserFindById();
         const response = await config.requestFn(
           config.route,
           requestBody,
           HTTP_STATUS.BAD_REQUEST,
-          {},
+          { mockToken: true },
           isSetJson
         );
         expectResponseFn.badRequest(response, expectedMessage);

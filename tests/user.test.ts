@@ -5,12 +5,11 @@ import { HTTP_STATUS } from "../src/common/constants";
 import * as utils from "../src/common/utils";
 import * as AlbumController from "../src/controllers/album.controller";
 import { setCaptcha } from "../src/core/captcha";
-import * as jwt from "../src/core/jwt";
 import User from "../src/models/user.model";
 
-import { MOCK_ALBUM } from "./fixtures/albumTestConfig";
+import { MOCK_ALBUM, MOCK_EXPECTED_ALBUM } from "./fixtures/albumTestConfig";
 import { describeAuthErrorTests, describeServerErrorTests, describeValidationErrorTests } from "./fixtures/testStructures";
-import { createRequest, expectResponse, mockUserFindById, mockUserFindOne } from "./fixtures/testUtils";
+import { createRequest, expectResponse, mockUserFindById, mockUserFindOne, spyOnGetUserIdFromToken } from "./fixtures/testUtils";
 import { ROUTE, MOCK_USER_INFO, MOCK_REGISTER_EXIST_USER, MOCK_REGISTER_NOTEXIST_USER, MOCK_LOGIN_NOTEXIST_USER, MOCK_LOGIN_EXIST_USER, MOCK_CAPTCHA } from "./fixtures/userTestConfig";
 
 
@@ -39,10 +38,6 @@ const spyOnSvgCaptchaCreate = (): void => {
     text: "abcd",
     data: "<svg>captcha</svg>",
   });
-};
-
-const spyOnGetUserIdFromToken = (): void => {
-  jest.spyOn(jwt, "getUserIdFromToken").mockReturnValue(MOCK_USER_INFO.token);
 };
 
 describe("User API", () => {
@@ -151,12 +146,12 @@ describe("User API", () => {
           MOCK_LOGIN_EXIST_USER,
           HTTP_STATUS.OK
         );
-        expect(response.statusCode).toBe(200);
         expect(response.headers["set-cookie"]).toEqual(
           expect.arrayContaining([
             expect.stringMatching(/^token=.*$/)
           ])
         );
+        expectResponse.success(response, MOCK_EXPECTED_ALBUM);
       });
     });
 
@@ -268,7 +263,7 @@ describe("User API", () => {
       it("should clear cookie and logout user when userId exists", async() => {
         mockUserFindById();
         spyOnGetUserIdFromToken();
-        
+
         const response = await createRequest.post(
           ROUTE.LOGOUT,
           {},

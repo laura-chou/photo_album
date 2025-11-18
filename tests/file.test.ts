@@ -16,7 +16,7 @@ import User from "../src/models/user.model";
 
 import { ROUTE } from "./fixtures/fileTestConfig";
 import { describeAuthErrorTests } from "./fixtures/testStructures";
-import { createRequest, expectResponse, mockUserFindOne } from "./fixtures/testUtils";
+import { BadRequestType, createRequest, expectResponse, mockUserFindOne } from "./fixtures/testUtils";
 
 jest.mock("fs/promises");
 
@@ -131,7 +131,7 @@ describe("File API", () => {
           .set("Cookie", [`token=${token}`])
           .attach("file", path.join(__dirname, "files/test.txt"));
 
-        expectResponse.badRequest(response, RESPONSE_MESSAGE.LIMIT_FORMAT);
+        expectResponse.badRequest(response, "LIMIT_FORMAT");
       });
 
       test("should fail when file size exceeds limit", async() => {
@@ -173,7 +173,7 @@ describe("File API", () => {
 
       const runBadRequestTest = async(
         setupFn: (req: supertest.Test) => Promise<supertest.Response>,
-        expectedMessage: string
+        expectedMessage: BadRequestType
       ): Promise<void> => {
         const response = await setupFn(uploadRequest());
         expectResponse.badRequest(response, expectedMessage);
@@ -182,21 +182,21 @@ describe("File API", () => {
       test("should return 400 for invalid Content-Type", async() => {
         await runBadRequestTest(
           async(req) => req.send({}),
-          RESPONSE_MESSAGE.INVALID_CONTENT_TYPE
+          "CONTENT_TYPE"
         );
       });
 
       test("should return 400 if no files uploaded", async() => {
         await runBadRequestTest(
           async(req) => req.field("folderId", "507f1f77bcf86cd799439011"),
-          RESPONSE_MESSAGE.NO_FILE
+          "NO_FILE"
         );
       });
 
       test("should return 400 if no folderId", async() => {
         await runBadRequestTest(
           async(req) => req.attach("file", path.join(__dirname, "files/19kb.png")),
-          RESPONSE_MESSAGE.INVALID_JSON_KEY
+          "JSON_KEY"
         );
       });
 
@@ -206,7 +206,7 @@ describe("File API", () => {
             req
               .field("folderId", "invalid-id")
               .attach("file", path.join(__dirname, "files/19kb.png")),
-          RESPONSE_MESSAGE.INVALID_ID
+          "INVALID_ID"
         );
       });
 
@@ -219,7 +219,7 @@ describe("File API", () => {
               .field("folderId", "507f1f77bcf86cd799439011")
               .attach("file", path.join(__dirname, "files/19kb.png"))
               .attach("file", path.join(__dirname, "files/19kb.png")),
-          RESPONSE_MESSAGE.UPLOAD_LIMIT
+          "FILE_LIMIT"
         );
       });
     });

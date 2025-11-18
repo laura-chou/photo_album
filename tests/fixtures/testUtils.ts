@@ -1,15 +1,15 @@
 import jwt from "jsonwebtoken";
-import mongoose from "mongoose";
 import request, { Response, Request } from "supertest";
 
 import app from "../../src/app";
 import { CONTENT_TYPE, HTTP_STATUS, RESPONSE_MESSAGE } from "../../src/common/constants";
 import { isTypeString } from "../../src/common/utils";
+import * as jwtCore from "../../src/core/jwt";
 import User from "../../src/models/user.model";
 
 import { MOCK_USER_INFO } from "./userTestConfig";
 
-interface TokenOptions {
+export interface TokenOptions {
   showToken: boolean;
   mockToken: boolean;
   isExpired: boolean;
@@ -43,8 +43,8 @@ const UNAUTHORIZED_MESSAGE_MAP = {
   WRONG_PASSWORD: RESPONSE_MESSAGE.WRONG_PASSWORD
 } as const;
 
-type BadRequestType = keyof typeof BADREQUEST_MESSAGE_MAP;
-type UnAuthorizedType = keyof typeof UNAUTHORIZED_MESSAGE_MAP;
+export type BadRequestType = keyof typeof BADREQUEST_MESSAGE_MAP;
+export type UnAuthorizedType = keyof typeof UNAUTHORIZED_MESSAGE_MAP;
 
 const attachTokenCookie = (req: Request, options: TokenOptions): void => {
   if (!options.showToken) return;
@@ -76,25 +76,18 @@ export const mockUserFindById = (data: object | null = MOCK_USER_INFO): void => 
   (User.findById as jest.Mock).mockResolvedValue(data);
 };
 
-export const mockUserFindOneOnceAndChain = (data: object | null = MOCK_USER_INFO): void => {
-  (User.findOne as jest.Mock)
-    .mockResolvedValueOnce(data)
-    .mockReturnValueOnce({
-      select: jest.fn().mockReturnThis(),
-      lean: jest.fn().mockReturnThis(),
-      then: jest.fn((cb) => cb(data)),
-    });
-};
+// export const mockUserFindOneOnceAndChain = (data: object | null = MOCK_USER_INFO): void => {
+//   (User.findOne as jest.Mock)
+//     .mockResolvedValueOnce(data)
+//     .mockReturnValueOnce({
+//       select: jest.fn().mockReturnThis(),
+//       lean: jest.fn().mockReturnThis(),
+//       then: jest.fn((cb) => cb(data)),
+//     });
+// };
 
-export const mockSession = {
-  startTransaction: jest.fn(),
-  commitTransaction: jest.fn(),
-  abortTransaction: jest.fn(),
-  endSession: jest.fn(),
-};
-
-export const mockStartSession = (): void => {
-  mongoose.startSession = jest.fn().mockResolvedValue(mockSession);
+export const spyOnGetUserIdFromToken = (): void => {
+  jest.spyOn(jwtCore, "getUserIdFromToken").mockReturnValue(MOCK_USER_INFO._id);
 };
 
 export const createRequest = {
@@ -155,7 +148,7 @@ export const createRequest = {
       .send(body);
 
     attachTokenCookie(req, mergedTokenOptions);
-    
+
     return req
       .expect("Content-Type", expectContentType)
       .expect(status);
@@ -197,13 +190,6 @@ export const expectResponse = {
       status: HTTP_STATUS.CREATED,
       message: RESPONSE_MESSAGE.SUCCESS,
       data
-    });
-  },
-
-  updated: (response: Response): void => {
-    expect(response.body).toEqual({
-      status: HTTP_STATUS.OK,
-      message: RESPONSE_MESSAGE.SUCCESS
     });
   },
 
