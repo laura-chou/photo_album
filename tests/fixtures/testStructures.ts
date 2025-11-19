@@ -117,7 +117,7 @@ export const describeAuthErrorTests = (
   const authTestCases: AuthTestCase[] = [
     ["no JWT", { showToken: false }, "TOKEN_INVALID", false],
     ["invalid JWT", { isInvalid: true }, "TOKEN_INVALID", false],
-    ["expired JWT", { isExpired: true }, "TOKEN_INVALID", false],
+    ["expired JWT", { isExpired: true, mockToken: false }, "TOKEN_INVALID", false],
     ["User in JWT does not exist", { existUser: false, showToken: true }, "WRONG_PASSWORD", true]
   ];
 

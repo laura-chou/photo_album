@@ -6,7 +6,7 @@ import { v4 as uuidv4 } from "uuid";
 
 import { HTTP_STATUS, RESPONSE_MESSAGE } from "../common/constants";
 import { responseHandler } from "../common/response";
-import { convertToBool, getNowDate, isNullOrEmpty, setFunctionName } from "../common/utils";
+import { convertToBool, getNowDate, setFunctionName } from "../common/utils";
 import { getFilePipeline, getFilesCountPipeline, toObjectId } from "../core/db";
 import { deleteFromFTP, uploadToFTP } from "../core/file-upload";
 import { getUserIdFromToken } from "../core/jwt";
@@ -21,12 +21,10 @@ export const readPhoto = setFunctionName(
     const fileName = request.params.fileName;
 
     const userId = getUserIdFromToken(request);
-    if (isNullOrEmpty(userId)) {
-      setLog(LogLevel.ERROR, LogMessage.ERROR.TOKENERROR, readPhoto.name);
-      responseHandler.unauthorized(response, "TOKEN_INVALID");
+    if (!baseController.validateUserIdFromToken(userId, response, readPhoto.name)) {
       return;
     }
-    
+
     if (!convertToBool(process.env.PRD_ENV)) {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const localPath = path.join(process.cwd(), "photo-album", userId!, fileName);
@@ -81,7 +79,7 @@ export const uploadPhoto = setFunctionName(
     }
 
     const userId = getUserIdFromToken(request);
-    if (!baseController.validateUserIdFromToken) {
+    if (!baseController.validateUserIdFromToken(userId, response, uploadPhoto.name)) {
       return;
     }
 
@@ -162,7 +160,7 @@ export const updateFile = setFunctionName(
     }
 
     const userId = getUserIdFromToken(request);
-    if (!baseController.validateUserIdFromToken) {
+    if (!baseController.validateUserIdFromToken(userId, response, updateFile.name)) {
       return;
     }
 

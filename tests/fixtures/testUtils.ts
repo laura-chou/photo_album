@@ -4,9 +4,11 @@ import request, { Response, Request } from "supertest";
 import app from "../../src/app";
 import { CONTENT_TYPE, HTTP_STATUS, RESPONSE_MESSAGE } from "../../src/common/constants";
 import { isTypeString } from "../../src/common/utils";
+import * as AlbumController from "../../src/controllers/album.controller";
 import * as jwtCore from "../../src/core/jwt";
 import User from "../../src/models/user.model";
 
+import { MOCK_ALBUM } from "./albumTestConfig";
 import { MOCK_USER_INFO } from "./userTestConfig";
 
 export interface TokenOptions {
@@ -19,7 +21,7 @@ export interface TokenOptions {
 
 const defaultTokenOptions: Required<TokenOptions> = {
   showToken: true,
-  mockToken: false,
+  mockToken: true,
   existUser: true,
   isExpired: false,
   isInvalid: false
@@ -76,18 +78,12 @@ export const mockUserFindById = (data: object | null = MOCK_USER_INFO): void => 
   (User.findById as jest.Mock).mockResolvedValue(data);
 };
 
-// export const mockUserFindOneOnceAndChain = (data: object | null = MOCK_USER_INFO): void => {
-//   (User.findOne as jest.Mock)
-//     .mockResolvedValueOnce(data)
-//     .mockReturnValueOnce({
-//       select: jest.fn().mockReturnThis(),
-//       lean: jest.fn().mockReturnThis(),
-//       then: jest.fn((cb) => cb(data)),
-//     });
-// };
-
 export const spyOnGetUserIdFromToken = (): void => {
   jest.spyOn(jwtCore, "getUserIdFromToken").mockReturnValue(MOCK_USER_INFO._id);
+};
+
+export const spyOnGetAlbum = (): void => {
+  jest.spyOn(AlbumController, "getAlbum").mockResolvedValue(MOCK_ALBUM);
 };
 
 export const createRequest = {

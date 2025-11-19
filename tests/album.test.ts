@@ -1,12 +1,12 @@
 import { HTTP_STATUS } from "../src/common/constants";
 import * as AlbumController from "../src/controllers/album.controller";
 import Album from "../src/models/album.model";
+import User from "../src/models/user.model";
 
-import { MOCK_ALBUM, MOCK_EXPECTED_ALBUM, MOCK_CREATE_DATA,
-  MOCK_DELETE_FOLDER_DATA, MOCK_DELETE_INVALID_DATA,
-  MOCK_UPDATE_DATA, ROUTE } from "./fixtures/albumTestConfig";
+import { MOCK_EXPECTED_ALBUM, MOCK_CREATE_DATA, MOCK_DELETE_FOLDER_DATA,
+  MOCK_DELETE_INVALID_DATA, MOCK_UPDATE_DATA, ROUTE } from "./fixtures/albumTestConfig";
 import { describeAuthErrorTests, describeServerErrorTests, describeValidationErrorTests, describeValidationParamsIdTest } from "./fixtures/testStructures";
-import { createRequest, expectResponse, mockUserFindById, spyOnGetUserIdFromToken } from "./fixtures/testUtils";
+import { createRequest, expectResponse, mockUserFindById, spyOnGetUserIdFromToken, spyOnGetAlbum } from "./fixtures/testUtils";
 
 jest.mock("../src/models/user.model", () => ({
   findOne: jest.fn(),
@@ -21,6 +21,10 @@ jest.mock("../src/models/album.model", () => ({
   findOne: jest.fn(),
   create: jest.fn()
 }));
+
+const mockAlbumFindOne = (data: object | null | Error = { folder: [], save: jest.fn() }): void => {
+  (Album.findOne as jest.Mock).mockResolvedValueOnce(data);
+};
 
 describe("Album API", () => {
   beforeEach(() => {
@@ -63,15 +67,13 @@ describe("Album API", () => {
     describe("Success Cases", () => {
       test("should create a new folder when action is 'create' and user is exist", async() => {
         mockUserFindById();
-        (Album.findOne as jest.Mock).mockResolvedValue({ folder: [], save: jest.fn() });
-        jest.spyOn(AlbumController, "getAlbum").mockResolvedValue(MOCK_ALBUM);
-
+        mockAlbumFindOne();
+        spyOnGetAlbum();
 
         const response = await createRequest.patch(
           route,
           MOCK_CREATE_DATA,
-          HTTP_STATUS.OK,
-          { mockToken: true }
+          HTTP_STATUS.OK
         );
 
         expectResponse.success(response, MOCK_EXPECTED_ALBUM);
@@ -79,14 +81,13 @@ describe("Album API", () => {
 
       test("should create a new album when action is 'create' and user is not exist", async() => {
         mockUserFindById();
-        (Album.findOne as jest.Mock).mockResolvedValue(null);
-        jest.spyOn(AlbumController, "getAlbum").mockResolvedValue(MOCK_ALBUM);
+        mockAlbumFindOne(null);
+        spyOnGetAlbum();
 
         const response = await createRequest.patch(
           route,
           MOCK_CREATE_DATA,
-          HTTP_STATUS.OK,
-          { mockToken: true }
+          HTTP_STATUS.OK
         );
 
         expectResponse.success(response, MOCK_EXPECTED_ALBUM);
@@ -95,13 +96,12 @@ describe("Album API", () => {
       test("should rename a folder when action is 'rename'", async() => {
         mockUserFindById();
         spyOnGetUserIdFromToken();
-        jest.spyOn(AlbumController, "getAlbum").mockResolvedValue(MOCK_ALBUM);
+        spyOnGetAlbum();
 
         const response = await createRequest.patch(
           route,
           MOCK_UPDATE_DATA,
-          HTTP_STATUS.OK,
-          { mockToken: true }
+          HTTP_STATUS.OK
         );
 
         expectResponse.success(response, MOCK_EXPECTED_ALBUM);
@@ -110,150 +110,137 @@ describe("Album API", () => {
       test("should delete a folder when action is 'delete'", async() => {
         mockUserFindById();
         spyOnGetUserIdFromToken();
-        jest.spyOn(AlbumController, "getAlbum").mockResolvedValue(MOCK_ALBUM);
+        spyOnGetAlbum();
 
         const response = await createRequest.patch(
           route,
           MOCK_DELETE_FOLDER_DATA,
-          HTTP_STATUS.OK,
-          { mockToken: true }
+          HTTP_STATUS.OK
         );
 
         expectResponse.success(response, MOCK_EXPECTED_ALBUM);
       });
     });
 
-    // describeServerErrorTests(
-    //   {
-    //     route: route,
-    //     requestFn: createRequest.patch,
-    //     requestBody: MOCK_CREATE_DATA,
-    //     dbErrorCases: [
-    //       {
-    //         name: "first User.findOne",
-    //         mockFn: User.findOne as jest.Mock
-    //       },
-    //       {
-    //         name: "second User.findOne",
-    //         mockFn: User.findOne as jest.Mock,
-    //         setupMocks: (): void => {
-    //           const chainMock = {
-    //             select: jest.fn().mockReturnThis(),
-    //             lean: jest.fn().mockReturnThis(),
-    //             then: jest.fn(() => {
-    //               throw new Error("DB error");
-    //             }),
-    //           };
-
-    //           const mock = User.findOne as jest.Mock;
-    //           mock.mockResolvedValueOnce(MOCK_USER_INFO);
-    //           mock.mockImplementationOnce(() => chainMock);
-    //           mock.mockRejectedValueOnce(new Error("DB error"));
-    //         }
-    //       },
-    //       {
-    //         name: "Album.findOne",
-    //         mockFn: Album.findOne as jest.Mock,
-    //         setupMocks: (): void => {
-    //           mockUserFindOneOnceAndChain();
-    //         }
-    //       },
-    //       {
-    //         name: "Album.save",
-    //         mockFn: Album.findOne as jest.Mock,
-    //         setupMocks: (): void => {
-    //           mockUserFindOneOnceAndChain();
-    //           const mockSave = jest.fn().mockRejectedValue(new Error("DB error"));
-    //           const mockAlbum = { folder: [], save: mockSave };
-    //           (Album.findOne as jest.Mock).mockResolvedValue(mockAlbum);
-    //           (Album.findOne as jest.Mock).mockRejectedValueOnce = jest.fn();
-    //         }
-    //       },
-    //       {
-    //         name: "Album.create",
-    //         mockFn: Album.create as jest.Mock,
-    //         setupMocks: (): void => {
-    //           mockUserFindOneOnceAndChain();
-    //           (Album.findOne as jest.Mock).mockResolvedValue(null);
-    //         }
-    //       }
-    //     ]
-    //   },
-    //   expectResponse,
-    //   "Action Create Server Error Cases"
-    // );
+    describeServerErrorTests(
+      {
+        route: route,
+        requestFn: createRequest.patch,
+        requestBody: MOCK_CREATE_DATA,
+        dbErrorCases: [
+          {
+            name: "User.findById",
+            mockFn: User.findById as jest.Mock
+          },
+          {
+            name: "Album.findOne",
+            mockFn: Album.findOne as jest.Mock,
+            setupMocks: (): void => {
+              mockUserFindById();
+              spyOnGetUserIdFromToken();
+            }
+          },
+          {
+            name: "Album.save",
+            mockFn: Album.findOne as jest.Mock,
+            setupMocks: (): void => {
+              mockUserFindById();
+              spyOnGetUserIdFromToken();
+              (Album.findOne as jest.Mock).mockResolvedValue({
+                folder: [],
+                save: jest.fn().mockRejectedValue(new Error("DB error"))
+              });
+            }
+          },
+          {
+            name: "Album.create",
+            mockFn: Album.create as jest.Mock,
+            setupMocks: (): void => {
+              mockUserFindById();
+              spyOnGetUserIdFromToken();
+              mockAlbumFindOne(null);
+            }
+          },
+          {
+            name: "Album.findOne",
+            mockFn: Album.findOne as jest.Mock,
+            setupMocks: (): void => {
+              mockUserFindById();
+              spyOnGetUserIdFromToken();
+              mockAlbumFindOne(null);
+              jest.spyOn(AlbumController, "getAlbum").mockRejectedValue(new Error("DB error"));
+            }
+          }
+        ]
+      },
+      expectResponse,
+      "Action Create Server Error Cases"
+    );
     
-    // describeServerErrorTests(
-    //   {
-    //     route: route,
-    //     requestFn: createRequest.patch,
-    //     requestBody: MOCK_UPDATE_DATA,
-    //     dbErrorCases: [
-    //       {
-    //         name: "User.findOne",
-    //         mockFn: User.findOne as jest.Mock
-    //       },
-    //       {
-    //         name: "Album.updateOne",
-    //         mockFn: Album.updateOne as jest.Mock,
-    //         setupMocks: (): void => {
-    //           mockUserFindOne();
-    //         }
-    //       }
-    //     ]
-    //   },
-    //   expectResponse,
-    //   "Action Rename Server Error Cases"
-    // );
+    describeServerErrorTests(
+      {
+        route: route,
+        requestFn: createRequest.patch,
+        requestBody: MOCK_UPDATE_DATA,
+        dbErrorCases: [
+          {
+            name: "User.findById",
+            mockFn: User.findById as jest.Mock
+          },
+          {
+            name: "Album.updateOne",
+            mockFn: Album.updateOne as jest.Mock,
+            setupMocks: (): void => {
+              mockUserFindById();
+              spyOnGetUserIdFromToken();
+            }
+          },
+          {
+            name: "Album.findOne",
+            mockFn: Album.findOne as jest.Mock,
+            setupMocks: (): void => {
+              mockUserFindById();
+              spyOnGetUserIdFromToken();
+              jest.spyOn(AlbumController, "getAlbum").mockRejectedValue(new Error("DB error"));
+            }
+          }
+        ]
+      },
+      expectResponse,
+      "Action Rename Server Error Cases"
+    );
 
-    // describeServerErrorTests(
-    //   {
-    //     route: route,
-    //     requestFn: createRequest.patch,
-    //     requestBody: MOCK_DELETE_FOLDER_DATA,
-    //     dbErrorCases: [
-    //       {
-    //         name: "User.findOne",
-    //         mockFn: User.findOne as jest.Mock
-    //       },
-    //       {
-    //         name: "Album.updateOne",
-    //         mockFn: Album.updateOne as jest.Mock,
-    //         setupMocks: (): void => {
-    //           mockUserFindOne();
-    //         }
-    //       }
-    //     ]
-    //   },
-    //   expectResponse,
-    //   "Action Delete Folder Server Error Cases"
-    // );
-
-    // describeServerErrorTests(
-    //   {
-    //     route: route,
-    //     requestFn: createRequest.patch,
-    //     requestBody: MOCK_DELETE_FILE_DATA,
-    //     dbErrorCases: [
-    //       {
-    //         name: "Album.aggregate",
-    //         mockFn: Album.aggregate as jest.Mock,
-    //         setupMocks: (): void => {
-    //           mockUserFindOne();
-    //         }
-    //       },
-    //       {
-    //         name: "Album.updateOne",
-    //         mockFn: Album.updateOne as jest.Mock,
-    //         setupMocks: (): void => {
-    //           mockUserFindOne();
-    //           mockAlbumAggregate(MOCK_FILE);
-    //         }
-    //       }
-    //     ]
-    //   },
-    //   expectResponse,
-    //   "Action Delete File Server Error Cases"
-    // );
+    describeServerErrorTests(
+      {
+        route: route,
+        requestFn: createRequest.patch,
+        requestBody: MOCK_DELETE_FOLDER_DATA,
+        dbErrorCases: [
+          {
+            name: "User.findById",
+            mockFn: User.findById as jest.Mock
+          },
+          {
+            name: "Album.updateOne",
+            mockFn: Album.updateOne as jest.Mock,
+            setupMocks: (): void => {
+              mockUserFindById();
+              spyOnGetUserIdFromToken();
+            }
+          },
+          {
+            name: "Album.findOne",
+            mockFn: Album.findOne as jest.Mock,
+            setupMocks: (): void => {
+              mockUserFindById();
+              spyOnGetUserIdFromToken();
+              jest.spyOn(AlbumController, "getAlbum").mockRejectedValue(new Error("DB error"));
+            }
+          }
+        ]
+      },
+      expectResponse,
+      "Action Delete Server Error Cases"
+    );
   });
 });

@@ -56,7 +56,7 @@ export const updateFolder = setFunctionName(
     }
 
     const userId = getUserIdFromToken(request);
-    if (!baseController.validateUserIdFromToken) {
+    if (!baseController.validateUserIdFromToken(userId, response, updateFolder.name)) {
       return;
     }
 
@@ -118,10 +118,10 @@ export const updateFolder = setFunctionName(
         );
         await deleteFromFTP(folderId);
       }
-      
+
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const userAlbum = await getAlbum(userId!);
-      
+
       const message = `${LogMessage.SUCCESS}, action: ${action}`;
       setLog(LogLevel.INFO, message, updateFolder.name);
       responseHandler.success(response, userAlbum);

@@ -76,7 +76,7 @@ export const validateId = (
 };
 
 export const validateUserIdFromToken = (
-  userId: string,
+  userId: string | null,
   response: Response,
   functionName: string
 ): boolean => {
