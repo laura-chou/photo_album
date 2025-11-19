@@ -100,7 +100,7 @@ export const uploadPhoto = setFunctionName(
         responseHandler.badRequest(response, "FILE_LIMIT");
         return;
       }
-      
+
       const newFiles: Files[] = [];
       for (const file of files) {
         const ext = file.originalname.split(".").pop();
@@ -112,6 +112,7 @@ export const uploadPhoto = setFunctionName(
             createDate: getNowDate()
           }
         );
+
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         await uploadToFTP(file.buffer, userId!, filename);
       }

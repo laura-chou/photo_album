@@ -2,21 +2,18 @@ import fsPromises from "fs/promises";
 import path from "path";
 
 import express, { Response } from "express";
-import jwt from "jsonwebtoken";
-import request from "supertest";
-import supertest from "supertest";
 import { v4 as uuidv4 } from "uuid";
 
-
-import app from "../src/app";
 import { HTTP_STATUS, RESPONSE_MESSAGE } from "../src/common/constants";
 import * as fileUpload from "../src/core/file-upload";
 import Album from "../src/models/album.model";
 import User from "../src/models/user.model";
 
+import { MOCK_EXPECTED_ALBUM } from "./fixtures/albumTestConfig";
 import { ROUTE } from "./fixtures/fileTestConfig";
 import { describeAuthErrorTests } from "./fixtures/testStructures";
-import { BadRequestType, createRequest, expectResponse, mockUserFindOne } from "./fixtures/testUtils";
+import { createRequest, expectResponse, mockUserFindById, spyOnGetAlbum, spyOnGetUserIdFromToken } from "./fixtures/testUtils";
+import { MOCK_USER_INFO } from "./fixtures/userTestConfig";
 
 jest.mock("fs/promises");
 
@@ -24,6 +21,8 @@ jest.mock("uuid");
 
 jest.mock("../src/models/user.model", () => ({
   findOne: jest.fn(),
+  findById: jest.fn(),
+  findByIdAndUpdate: jest.fn(),
   updateOne: jest.fn()
 }));
 
@@ -40,13 +39,6 @@ const spyOnSendFile = (): void => {
   });
 };
 
-const token = jwt.sign(
-  { user: "testuser" },
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  process.env.JWT_SECRET!,
-  { expiresIn: "1h" }
-);
-
 describe("File API", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -55,8 +47,8 @@ describe("File API", () => {
     process.env.FTP_USER = "user";
   });
 
-  describe(`GET ${ROUTE.FILE}/:folderId/:fileName`, () => {
-    const route = `${ROUTE.FILE}/abc123/photo.jpg`;
+  describe(`GET ${ROUTE.FILE}/:fileName`, () => {
+    const route = `${ROUTE.FILE}/photo.jpg`;
 
     describeAuthErrorTests(
       route,
@@ -66,7 +58,8 @@ describe("File API", () => {
 
     describe("Success Cases", () => {
       test("should send local image if PRD_ENV is false and file exists", async() => {
-        mockUserFindOne();
+        mockUserFindById();
+        spyOnGetUserIdFromToken();
         process.env.PRD_ENV = "false";
         (fsPromises.access as jest.Mock).mockResolvedValue(undefined);
         spyOnSendFile();
@@ -78,12 +71,13 @@ describe("File API", () => {
           false
         );
 
-        const expectedPath = path.join(process.cwd(), "photo-album", "abc123", "photo.jpg");
+        const expectedPath = path.join(process.cwd(), "photo-album", MOCK_USER_INFO._id, "photo.jpg");
         expect(fsPromises.access).toHaveBeenCalledWith(expectedPath);
       });
 
       test("should redirect to FTP URL if PRD_ENV is true", async() => {
-        mockUserFindOne();
+        mockUserFindById();
+        spyOnGetUserIdFromToken();
         process.env.PRD_ENV = "true";
 
         const response = await createRequest.get(
@@ -92,14 +86,15 @@ describe("File API", () => {
           {},
           false
         );
-
-        expect(response.headers.location).toBe("http://ftp.example.com/user/photo-album/abc123/photo.jpg");
+        const expectedPath = `http://ftp.example.com/user/photo-album/${MOCK_USER_INFO._id}/photo.jpg`;
+        expect(response.headers.location).toBe(expectedPath);
       });
     });
 
     describe("Client Error Cases", () => {
       test("should return 404 if local image does not exist", async() => {
-        mockUserFindOne();
+        mockUserFindById();
+        spyOnGetUserIdFromToken();
         process.env.PRD_ENV = "false";
         (fsPromises.access as jest.Mock).mockRejectedValue(new Error("not found"));
 
@@ -124,23 +119,25 @@ describe("File API", () => {
 
     describe("Multer Upload Error Cases", () => {
       test("should fail when uploading a non-image file", async() => {
-        mockUserFindOne();
+        mockUserFindById();
+        spyOnGetUserIdFromToken();
 
-        const response = await request(app)
-          .post(ROUTE.UPLOAD)
-          .set("Cookie", [`token=${token}`])
-          .attach("file", path.join(__dirname, "files/test.txt"));
+        const response = await createRequest.formDataPost(
+          ROUTE.UPLOAD,
+          { attachFile: "test.txt" }
+        );
 
         expectResponse.badRequest(response, "LIMIT_FORMAT");
       });
 
       test("should fail when file size exceeds limit", async() => {
-        mockUserFindOne();
+        mockUserFindById();
+        spyOnGetUserIdFromToken();
 
-        const response = await request(app)
-          .post(ROUTE.UPLOAD)
-          .set("Cookie", [`token=${token}`])
-          .attach("file", path.join(__dirname, "files/1mb.png"));
+        const response = await createRequest.formDataPost(
+          ROUTE.UPLOAD,
+          { attachFile: "1mb.png" }
+        );
 
         expectResponse.payloadTooLarge(response);
       });
@@ -148,143 +145,115 @@ describe("File API", () => {
 
     describe("Not Found Cases", () => {
       test("should return 404 when folder not found", async() => {
-        mockUserFindOne();
-        (Album.aggregate as jest.Mock).mockResolvedValue(null);
+        mockUserFindById();
+        spyOnGetUserIdFromToken();
+        (Album.aggregate as jest.Mock).mockResolvedValue([]);
 
-        const response = await request(app)
-          .post(ROUTE.UPLOAD)
-          .set("Cookie", [`token=${token}`])
-          .field("folderId", "507f1f77bcf86cd799439011")
-          .attach("file", path.join(__dirname, "files/19kb.png"));
-
+        const response = await createRequest.formDataPost(ROUTE.UPLOAD);
         expectResponse.notFound(response, []);
       });
     });
-    
-    describe("Validation Error Cases", () => {
-      const uploadRequest = (): supertest.Test =>
-        supertest(app)
-          .post(ROUTE.UPLOAD)
-          .set("Cookie", [`token=${token}`]);
 
+    describe("Validation Error Cases", () => {
       beforeEach(() => {
-        mockUserFindOne();
+        mockUserFindById();
+        spyOnGetUserIdFromToken();
       });
 
-      const runBadRequestTest = async(
-        setupFn: (req: supertest.Test) => Promise<supertest.Response>,
-        expectedMessage: BadRequestType
-      ): Promise<void> => {
-        const response = await setupFn(uploadRequest());
-        expectResponse.badRequest(response, expectedMessage);
-      };
-
       test("should return 400 for invalid Content-Type", async() => {
-        await runBadRequestTest(
-          async(req) => req.send({}),
-          "CONTENT_TYPE"
+        const response = await createRequest.formDataPost(
+          ROUTE.UPLOAD,
+          { isSetFormData: false }
         );
+        expectResponse.badRequest(response, "CONTENT_TYPE");
       });
 
       test("should return 400 if no files uploaded", async() => {
-        await runBadRequestTest(
-          async(req) => req.field("folderId", "507f1f77bcf86cd799439011"),
-          "NO_FILE"
+        const response = await createRequest.formDataPost(
+          ROUTE.UPLOAD,
+          { attachFile: "" }
         );
+
+        expectResponse.badRequest(response, "NO_FILE");
       });
 
       test("should return 400 if no folderId", async() => {
-        await runBadRequestTest(
-          async(req) => req.attach("file", path.join(__dirname, "files/19kb.png")),
-          "JSON_KEY"
+        const response = await createRequest.formDataPost(
+          ROUTE.UPLOAD,
+          { isSetFolderId: false }
         );
+
+        expectResponse.badRequest(response, "JSON_KEY");
       });
 
       test("should return 400 if Id format is invalid", async() => {
-        await runBadRequestTest(
-          async(req) =>
-            req
-              .field("folderId", "invalid-id")
-              .attach("file", path.join(__dirname, "files/19kb.png")),
-          "INVALID_ID"
+        const response = await createRequest.formDataPost(
+          ROUTE.UPLOAD,
+          { invalidFolderId: true }
         );
+
+        expectResponse.badRequest(response, "INVALID_ID");
       });
 
-      test("should return 400 if total files exceed 3", async() => {
-        (Album.aggregate as jest.Mock).mockResolvedValue([{ fileCount: 2 }]);
+      test("should return 400 if total files exceed 5", async() => {
+        (Album.aggregate as jest.Mock).mockResolvedValue([{ fileCount: 5 }]);
+      
+        const response = await createRequest.formDataPost(ROUTE.UPLOAD);
 
-        await runBadRequestTest(
-          async(req) =>
-            req
-              .field("folderId", "507f1f77bcf86cd799439011")
-              .attach("file", path.join(__dirname, "files/19kb.png"))
-              .attach("file", path.join(__dirname, "files/19kb.png")),
-          "FILE_LIMIT"
-        );
+        expectResponse.badRequest(response, "FILE_LIMIT");
       });
     });
 
     describe("Success Cases", () => {
       test("should upload files successfully", async() => {
-        mockUserFindOne();
+        mockUserFindById();
+        spyOnGetUserIdFromToken();
         (Album.aggregate as jest.Mock).mockResolvedValue([{ fileCount: 1 }]);
         (uuidv4 as jest.Mock).mockReturnValueOnce("uuid1");
         jest.spyOn(fileUpload, "uploadToFTP").mockResolvedValue();
+        spyOnGetAlbum();
 
-        const response = await request(app)
-          .post(ROUTE.UPLOAD)
-          .set("Cookie", [`token=${token}`])
-          .field("folderId", "507f1f77bcf86cd799439011")
-          .attach("file", path.join(__dirname, "files/19kb.png"));
+        const response = await createRequest.formDataPost(ROUTE.UPLOAD);
 
-        expectResponse.updated(response);
+        expectResponse.success(response, MOCK_EXPECTED_ALBUM);
       });
     });
 
     describe("Server Error Cases", () => {
-      const uploadRequest = (): supertest.Test =>
-        supertest(app)
-          .post(ROUTE.UPLOAD)
-          .set("Cookie", [`token=${token}`])
-          .field("folderId", "507f1f77bcf86cd799439011")
-          .attach("file", Buffer.from("test"), "19kb.png");
+      test("should return 500 if User.findById throws error", async() => {
+        (User.findById as jest.Mock).mockRejectedValueOnce(new Error("DB Error"));
 
-      const runServerErrorTest = async(mockFn: () => void): Promise<void> => {
-          mockFn();
-          const response: supertest.Response = await uploadRequest();
-          expectResponse.error(response);
-        };
-
-      test("should return 500 if User.findOne throws error", async() => {
-        await runServerErrorTest(() => {
-          (User.findOne as jest.Mock).mockRejectedValueOnce(new Error("DB Error"));
-        });
+        const response = await createRequest.formDataPost(ROUTE.UPLOAD);
+        expectResponse.error(response);
       });
 
       test("should return 500 if Album.aggregate throws error", async() => {
-        await runServerErrorTest(() => {
-          mockUserFindOne();
-          (Album.aggregate as jest.Mock).mockRejectedValueOnce(new Error("DB Error"));
-        });
+        mockUserFindById();
+        spyOnGetUserIdFromToken();
+        (Album.aggregate as jest.Mock).mockRejectedValueOnce(new Error("DB Error"));
+
+        const response = await createRequest.formDataPost(ROUTE.UPLOAD);
+        expectResponse.error(response);
       });
 
       test("should return 500 if uploadToFTP throws error", async() => {
-        await runServerErrorTest(() => {
-          mockUserFindOne();
-          (Album.aggregate as jest.Mock).mockResolvedValue([{ fileCount: 1 }]);
-          (uuidv4 as jest.Mock).mockReturnValueOnce("uuid1");
-          jest.spyOn(fileUpload, "uploadToFTP").mockRejectedValueOnce(new Error("upload fail"));
-        });
+        mockUserFindById();
+        spyOnGetUserIdFromToken();
+        (Album.aggregate as jest.Mock).mockResolvedValue([{ fileCount: 1 }]);
+        (uuidv4 as jest.Mock).mockReturnValueOnce("uuid1");
+        jest.spyOn(fileUpload, "uploadToFTP").mockRejectedValueOnce(new Error("upload fail"));
+      
+        const response = await createRequest.formDataPost(ROUTE.UPLOAD);
+        expectResponse.error(response);
       });
 
       test("should return 500 if Album.updateOne throws error", async() => {
-        await runServerErrorTest(() => {
-          mockUserFindOne();
-          (Album.aggregate as jest.Mock).mockResolvedValue([{ fileCount: 1 }]);
-          (uuidv4 as jest.Mock).mockReturnValueOnce("uuid1");
-          jest.spyOn(fileUpload, "uploadToFTP").mockResolvedValue();
-          (Album.updateOne as jest.Mock).mockRejectedValueOnce(new Error("DB Error"));
-        });
+        mockUserFindById();
+        spyOnGetUserIdFromToken();
+        (Album.aggregate as jest.Mock).mockResolvedValue([{ fileCount: 1 }]);
+        (uuidv4 as jest.Mock).mockReturnValueOnce("uuid1");
+        jest.spyOn(fileUpload, "uploadToFTP").mockResolvedValue();
+        (Album.updateOne as jest.Mock).mockRejectedValueOnce(new Error("DB Error"));
       });
     });
   });

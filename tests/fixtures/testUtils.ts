@@ -1,9 +1,11 @@
+import path from "path";
+
 import jwt from "jsonwebtoken";
 import request, { Response, Request } from "supertest";
 
 import app from "../../src/app";
 import { CONTENT_TYPE, HTTP_STATUS, RESPONSE_MESSAGE } from "../../src/common/constants";
-import { isTypeString } from "../../src/common/utils";
+import { isNullOrEmpty, isTypeString } from "../../src/common/utils";
 import * as AlbumController from "../../src/controllers/album.controller";
 import * as jwtCore from "../../src/core/jwt";
 import User from "../../src/models/user.model";
@@ -25,6 +27,20 @@ const defaultTokenOptions: Required<TokenOptions> = {
   existUser: true,
   isExpired: false,
   isInvalid: false
+};
+
+interface FormDataSetOptions {
+  attachFile: string;
+  isSetFormData: boolean;
+  isSetFolderId: boolean;
+  invalidFolderId: boolean;
+}
+
+const defaultFormDataSetOptions: Required<FormDataSetOptions> = {
+  attachFile: "19kb.png",
+  isSetFormData: true,
+  isSetFolderId: true,
+  invalidFolderId: false
 };
 
 const BADREQUEST_MESSAGE_MAP = {
@@ -52,7 +68,7 @@ const attachTokenCookie = (req: Request, options: TokenOptions): void => {
   if (!options.showToken) return;
 
   const payload = {
-    user: options.existUser ? "testuser" : "notExistUser",
+    user: options.existUser ? MOCK_USER_INFO.token : "notExistUser",
   };
 
   const signOptions: jwt.SignOptions = {};
@@ -90,7 +106,7 @@ export const createRequest = {
   get: (
     route: string,
     status: number,
-    TokenOptions?: Partial<TokenOptions>,    
+    TokenOptions?: Partial<TokenOptions>,
     isExpectJson: boolean = true
   ): request.Test => {
     const mergedTokenOptions = { ...defaultTokenOptions, ...TokenOptions };
@@ -127,6 +143,34 @@ export const createRequest = {
       .expect(status);
   },
 
+  formDataPost: (
+    route: string,
+    setOptions?: Partial<FormDataSetOptions>,
+    tokenOptions?: Partial<TokenOptions>
+  ): request.Test => {
+    const mergedTokenOptions = { ...defaultTokenOptions, ...tokenOptions };
+    const mergedSetOptions = { ...defaultFormDataSetOptions, ...setOptions };
+    const setContentType = mergedSetOptions.isSetFormData ? CONTENT_TYPE.FORM_DATA : CONTENT_TYPE.JSON;
+    const req = request(app)
+      .post(route)
+      .set("Content-Type", setContentType);
+
+    if (mergedSetOptions.isSetFormData) {
+      if (mergedSetOptions.isSetFolderId) {
+        const folderId = mergedSetOptions.invalidFolderId ? "invalid-id" : "507f1f77bcf86cd799439011";
+        req.field("folderId", folderId);
+      }
+
+      if (!isNullOrEmpty(mergedSetOptions.attachFile)) {
+        req.attach("files", path.join(__dirname, `../files/${mergedSetOptions.attachFile}`));
+      }
+    }
+
+    attachTokenCookie(req, mergedTokenOptions);
+
+    return req;
+  },
+
   patch: (
     route: string,
     body: string | object,
@@ -153,7 +197,7 @@ export const createRequest = {
   delete: (
     route: string,
     status: number,
-    TokenOptions?: Partial<TokenOptions>,    
+    TokenOptions?: Partial<TokenOptions>,
     isExpectJson: boolean = true
   ): request.Test => {
     const mergedTokenOptions = { ...defaultTokenOptions, ...TokenOptions };
