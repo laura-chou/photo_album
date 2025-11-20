@@ -29,7 +29,7 @@ const defaultTokenOptions: Required<TokenOptions> = {
   isInvalid: false
 };
 
-interface FormDataSetOptions {
+export interface FormDataSetOptions {
   attachFile: string;
   isSetFormData: boolean;
   isSetFolderId: boolean;
@@ -94,8 +94,8 @@ export const mockUserFindById = (data: object | null = MOCK_USER_INFO): void => 
   (User.findById as jest.Mock).mockResolvedValue(data);
 };
 
-export const spyOnGetUserIdFromToken = (): void => {
-  jest.spyOn(jwtCore, "getUserIdFromToken").mockReturnValue(MOCK_USER_INFO._id);
+export const spyOnGetUserIdFromToken = (data: string | null = MOCK_USER_INFO._id): void => {
+  jest.spyOn(jwtCore, "getUserIdFromToken").mockReturnValue(data);
 };
 
 export const spyOnGetAlbum = (): void => {
@@ -145,6 +145,7 @@ export const createRequest = {
 
   formDataPost: (
     route: string,
+    status: number,
     setOptions?: Partial<FormDataSetOptions>,
     tokenOptions?: Partial<TokenOptions>
   ): request.Test => {
@@ -168,7 +169,7 @@ export const createRequest = {
 
     attachTokenCookie(req, mergedTokenOptions);
 
-    return req;
+    return req.expect(status);
   },
 
   patch: (
@@ -190,8 +191,7 @@ export const createRequest = {
     attachTokenCookie(req, mergedTokenOptions);
 
     return req
-      .expect("Content-Type", expectContentType)
-      .expect(status);
+      .expect("Content-Type", expectContentType);
   },
 
   delete: (

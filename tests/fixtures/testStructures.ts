@@ -2,7 +2,8 @@ import request from "supertest";
 
 import { HTTP_STATUS } from "../../src/common/constants";
 
-import { TokenOptions, BadRequestType, UnAuthorizedType, expectResponse, mockUserFindById } from "./testUtils";
+import { TokenOptions, BadRequestType, UnAuthorizedType, expectResponse, mockUserFindById,
+  FormDataSetOptions, spyOnGetUserIdFromToken } from "./testUtils";
 
 type AuthTestCase = [
   description: string, 
@@ -42,9 +43,16 @@ type ModifyRequestFunction = (
   tokenInfo?: Partial<TokenOptions>
 ) => Promise<request.Response>;
 
+type FormDataRequestFunction = (
+  route: string,
+  status: number,
+  setOptions? : Partial<FormDataSetOptions>,
+  tokenInfo?: Partial<TokenOptions>
+) => Promise<request.Response>;
+
 interface ServerErrorConfig {
   route: string;
-  requestFn: GetRequestFunction | ModifyRequestFunction;
+  requestFn: GetRequestFunction | ModifyRequestFunction | FormDataRequestFunction;
   requestBody?: object;
   dbErrorCases: {
     name: string;
@@ -81,7 +89,7 @@ const generateInvalidTypeBody = <T extends Record<string, unknown>>(validBody: T
   }, {} as { [K in keyof T]: unknown });
 };
 
-export const describeValidationParamsIdTest = (
+export const describeParamsIdValidationTest = (
   route: string,
   requestFn: (
     route: string,
@@ -89,7 +97,7 @@ export const describeValidationParamsIdTest = (
     tokenInfo?: Partial<TokenOptions>
   ) => Promise<request.Response>,
   expectResponseFn: typeof expectResponse,
-  title = "Validation Id Parameter"
+  title = "Validation Parameter Id"
 ): void => {
   describe(title, () => {
     test("should return 400 if Id format is invalid", async() => {
@@ -104,6 +112,31 @@ export const describeValidationParamsIdTest = (
     });
   });
 };
+
+export const describeTokenUserIdValidationTest = (
+  route: string,
+  requestFn: (
+    route: string,
+    status: number,
+    tokenInfo?: Partial<TokenOptions>
+  ) => Promise<request.Response>,
+  expectResponseFn: typeof expectResponse,
+): void => {
+  describe("Validation Get User Id From Token", () => {
+    test("should fail if get user id from token is null", async() => {
+      mockUserFindById();
+      spyOnGetUserIdFromToken(null);
+
+      const response = await requestFn(
+        route,
+        HTTP_STATUS.UNAUTHORIZED,
+        { mockToken: true }
+      );
+      expectResponseFn.unauthorized(response, "TOKEN_INVALID");
+    });
+  });
+};
+
 
 export const describeAuthErrorTests = (
   route: string,
@@ -137,11 +170,11 @@ export const describeAuthErrorTests = (
   });
 };
 
-export const describeValidationErrorTests = <T extends ValidationBaseModel>(
+export const describeReqBodyValidationTests = <T extends ValidationBaseModel>(
   config: ValidationConfig<T>,
   expectResponseFn: typeof expectResponse
 ): void => {
-  describe("Validation Error Cases", () => {
+  describe("Validation Request Body Error Cases", () => {
     const validationTestCases: ValidationTestCase[] = [
       ["invalid Content-Type", config.validBody, false, "CONTENT_TYPE"],
       ["missing key in JSON body", { wrongKey: "value" }, true, "JSON_KEY"],
@@ -178,7 +211,7 @@ export const describeServerErrorTests = (
           setupMocks();
         }
 
-        mockFn.mockRejectedValueOnce(new Error("DB Error"));
+        mockFn.mockRejectedValue(new Error("DB Error"));
 
         const isModifyRequest = config.requestBody !== undefined;
 
@@ -189,7 +222,7 @@ export const describeServerErrorTests = (
               config.requestBody!,
               HTTP_STATUS.SERVER_ERROR
             )
-          : (config.requestFn as GetRequestFunction)(
+          : (config.requestFn as GetRequestFunction | FormDataRequestFunction)(
               config.route,
               HTTP_STATUS.SERVER_ERROR
             ));

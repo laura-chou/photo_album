@@ -7,7 +7,7 @@ import { setCaptcha } from "../src/core/captcha";
 import User from "../src/models/user.model";
 
 import { MOCK_EXPECTED_ALBUM } from "./fixtures/albumTestConfig";
-import { describeAuthErrorTests, describeServerErrorTests, describeValidationErrorTests } from "./fixtures/testStructures";
+import { describeAuthErrorTests, describeServerErrorTests, describeReqBodyValidationTests } from "./fixtures/testStructures";
 import { createRequest, expectResponse, mockUserFindById, mockUserFindOne, spyOnGetAlbum,
   spyOnGetUserIdFromToken
 } from "./fixtures/testUtils";
@@ -105,7 +105,7 @@ describe("User API", () => {
   });
 
   describe(`POST ${ROUTE.LOGIN}`, () => {
-    describeValidationErrorTests(
+    describeReqBodyValidationTests(
       {
         route: ROUTE.LOGIN,
         validBody: MOCK_LOGIN_EXIST_USER,
@@ -175,7 +175,7 @@ describe("User API", () => {
   });
 
   describe(`POST ${ROUTE.CREATE}`, () => {
-    describeValidationErrorTests(
+    describeReqBodyValidationTests(
       {
         route: ROUTE.CREATE,
         validBody: MOCK_REGISTER_EXIST_USER,

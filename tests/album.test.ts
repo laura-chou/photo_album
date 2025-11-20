@@ -5,7 +5,7 @@ import User from "../src/models/user.model";
 
 import { MOCK_EXPECTED_ALBUM, MOCK_CREATE_DATA, MOCK_DELETE_FOLDER_DATA,
   MOCK_DELETE_INVALID_DATA, MOCK_UPDATE_DATA, ROUTE } from "./fixtures/albumTestConfig";
-import { describeAuthErrorTests, describeServerErrorTests, describeValidationErrorTests, describeValidationParamsIdTest } from "./fixtures/testStructures";
+import { describeAuthErrorTests, describeServerErrorTests, describeReqBodyValidationTests, describeParamsIdValidationTest, describeTokenUserIdValidationTest } from "./fixtures/testStructures";
 import { createRequest, expectResponse, mockUserFindById, spyOnGetUserIdFromToken, spyOnGetAlbum } from "./fixtures/testUtils";
 
 jest.mock("../src/models/user.model", () => ({
@@ -41,7 +41,7 @@ describe("Album API", () => {
       expectResponse
     );
 
-    describeValidationErrorTests(
+    describeReqBodyValidationTests(
       {
         route: route,
         validBody: MOCK_UPDATE_DATA,
@@ -50,25 +50,35 @@ describe("Album API", () => {
       expectResponse
     );
 
-    describeValidationParamsIdTest(
+    describeParamsIdValidationTest(
       `${ROUTE.ALBUM}/invalid-id`,
       (route, status, tokenInfo) => createRequest.patch(route, MOCK_UPDATE_DATA, status, tokenInfo),
       expectResponse,
       "Action Rename Validation Id Parameter"
     );
 
-    describeValidationParamsIdTest(
+    describeParamsIdValidationTest(
       `${ROUTE.ALBUM}/invalid-id`,
       (route, status, tokenInfo) => createRequest.patch(route, MOCK_DELETE_INVALID_DATA, status, tokenInfo),
       expectResponse,
       "Action Delete Validation Id Parameter"
     );
+
+    describeTokenUserIdValidationTest(
+      route,
+      (route, status, tokenInfo) => createRequest.patch(route, MOCK_UPDATE_DATA, status, tokenInfo),
+      expectResponse
+    );
     
     describe("Success Cases", () => {
-      test("should create a new folder when action is 'create' and user is exist", async() => {
+      beforeEach(() => {
         mockUserFindById();
-        mockAlbumFindOne();
+        spyOnGetUserIdFromToken();
         spyOnGetAlbum();
+      });
+
+      test("should create a new folder when action is 'create' and user is exist", async() => {
+        mockAlbumFindOne();
 
         const response = await createRequest.patch(
           route,
@@ -80,9 +90,7 @@ describe("Album API", () => {
       });
 
       test("should create a new album when action is 'create' and user is not exist", async() => {
-        mockUserFindById();
         mockAlbumFindOne(null);
-        spyOnGetAlbum();
 
         const response = await createRequest.patch(
           route,
@@ -94,10 +102,6 @@ describe("Album API", () => {
       });
 
       test("should rename a folder when action is 'rename'", async() => {
-        mockUserFindById();
-        spyOnGetUserIdFromToken();
-        spyOnGetAlbum();
-
         const response = await createRequest.patch(
           route,
           MOCK_UPDATE_DATA,
@@ -108,10 +112,6 @@ describe("Album API", () => {
       });
 
       test("should delete a folder when action is 'delete'", async() => {
-        mockUserFindById();
-        spyOnGetUserIdFromToken();
-        spyOnGetAlbum();
-
         const response = await createRequest.patch(
           route,
           MOCK_DELETE_FOLDER_DATA,
