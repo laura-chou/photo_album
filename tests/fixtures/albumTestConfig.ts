@@ -1,4 +1,4 @@
-import { FolderAction } from "../../src/controllers/album.controller";
+import { ItemAction } from "../../src/controllers/album.controller";
 
 const base = "/album";
 
@@ -20,12 +20,8 @@ interface Folder {
   createDate: Date;
 }
 
-interface FileItem {
-  file: Files;
-}
-
 type UpdateFolderModel = {
-  action: FolderAction;
+  action: ItemAction;
   folderName?: string;
   userName?: string;
   fileId?: string;
@@ -44,26 +40,22 @@ export const MOCK_ALBUM: Folder[] = [
 
 export const MOCK_EXPECTED_ALBUM = JSON.parse(JSON.stringify(MOCK_ALBUM));
 
-// export const MOCK_FILE: FileItem[] = [{
-//   file: { _id: "507f1f77bcf86cd799439012", customName: "customA.jpg", storeName: "storeA.jpg", createDate: new Date("2025-11-18T17:51:51.832Z") }
-// }];
-
 export const MOCK_UPDATE_DATA: UpdateFolderModel = {
-  action: FolderAction.Rename,
+  action: ItemAction.Rename,
   folderName: "updateFolder"
 };
 
 export const MOCK_DELETE_FOLDER_DATA: UpdateFolderModel = {
-  action: FolderAction.Delete
+  action: ItemAction.Delete
 };
 
 export const MOCK_DELETE_INVALID_DATA: UpdateFolderModel = {
-  action: FolderAction.Delete,
+  action: ItemAction.Delete,
   fileId: "invalid-id"
 };
 
 export const MOCK_CREATE_DATA: UpdateFolderModel = {
-  action: FolderAction.Create,
+  action: ItemAction.Create,
   userName: "userName",
   folderName: "createFolder"
 };

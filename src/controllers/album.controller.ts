@@ -11,7 +11,7 @@ import Album, { Folder } from "../models/album.model";
 
 import * as baseController from "./base.controller";
 
-export enum FolderAction {
+export enum ItemAction {
   Rename = "rename",
   Delete = "delete",
   Create = "create"
@@ -41,7 +41,7 @@ export const updateFolder = setFunctionName(
       { key: "action", type: "string" }
     ];
     const { action, folderName } = request.body;
-    if (action !== FolderAction.Delete) {
+    if (action !== ItemAction.Delete) {
       fields.push({ key: "folderName", type: "string" });
     }
 
@@ -50,7 +50,7 @@ export const updateFolder = setFunctionName(
     }
 
     const folderId = request.params.folderId;
-    if (action !== FolderAction.Create
+    if (action !== ItemAction.Create
       && !baseController.validateId(folderId, response, updateFolder.name)) {
       return;
     }
@@ -61,7 +61,7 @@ export const updateFolder = setFunctionName(
     }
 
     try {
-      if (action === FolderAction.Create) {
+      if (action === ItemAction.Create) {
         const album = await Album.findOne({ userId });
         if (album) {
           if (album.folder.length > 5) {
@@ -87,7 +87,7 @@ export const updateFolder = setFunctionName(
             ]
           });
         }
-      } else if (action === FolderAction.Rename) {
+      } else if (action === ItemAction.Rename) {
         await Album.updateOne(
           {
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -103,7 +103,7 @@ export const updateFolder = setFunctionName(
             arrayFilters: [{ "f._id": toObjectId(folderId) }]
           }
         );
-      } else if (action === FolderAction.Delete) {
+      } else if (action === ItemAction.Delete) {
         await Album.updateOne(
           {
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion

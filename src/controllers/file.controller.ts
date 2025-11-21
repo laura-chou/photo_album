@@ -13,7 +13,7 @@ import { getUserIdFromToken } from "../core/jwt";
 import { LogLevel, LogMessage, setLog } from "../core/logger";
 import Album, { Files } from "../models/album.model";
 
-import { FolderAction, getAlbum } from "./album.controller";
+import { ItemAction, getAlbum } from "./album.controller";
 import * as baseController from "./base.controller";
 
 export const readPhoto = setFunctionName(
@@ -85,15 +85,15 @@ export const uploadPhoto = setFunctionName(
 
     try {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const [result] = await Album.aggregate(getFilesCountPipeline(userId!, folderId));
-      if (!result) {
+      const [albumAggre] = await Album.aggregate(getFilesCountPipeline(userId!, folderId));
+      if (!albumAggre) {
         const message = `${LogMessage.ERROR.NOTFOUND}, userId: ${userId}`;
         setLog(LogLevel.ERROR, message, uploadPhoto.name);
         responseHandler.notFound(response);
         return;
       }
 
-      const currentFileCount = result.fileCount;
+      const currentFileCount = albumAggre.fileCount;
       if (files.length + currentFileCount > 5) {
         files.forEach(file => file.buffer = Buffer.alloc(0));
         setLog(LogLevel.ERROR, RESPONSE_MESSAGE.FILE_LIMIT, uploadPhoto.name);
@@ -137,14 +137,13 @@ export const uploadPhoto = setFunctionName(
   "uploadPhoto"
 );
 
-
 export const updateFile = setFunctionName(
   async(request: Request, response: Response): Promise<void> => {
     const fileId = request.params.fileId;
     if (!baseController.validateId(fileId, response, updateFile.name)) {
       return;
     }
-    
+
     if (!baseController.validateContentType(request, response, updateFile.name)) {
       return;
     }
@@ -153,7 +152,7 @@ export const updateFile = setFunctionName(
       { key: "action", type: "string" }
     ];
     const { action, fileName } = request.body;
-    if (action === FolderAction.Rename) {
+    if (action === ItemAction.Rename) {
       fields.push({ key: "fileName", type: "string" });
     }
     if (!baseController.validateBodyFields(request, response, updateFile.name, fields)) {
@@ -167,16 +166,17 @@ export const updateFile = setFunctionName(
 
     try {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const albumAggre = await Album.aggregate(getFilePipeline(userId!, fileId));
-      if (!albumAggre || albumAggre.length === 0 ) {
+      const [albumAggre] = await Album.aggregate(getFilePipeline(userId!, fileId));
+      if (!albumAggre) {
         const message = `${LogMessage.ERROR.NOTFOUND}, \n{"action":${action}, "userId":${userId}, "fileId":${fileId}}`;
         setLog(LogLevel.ERROR, message, updateFile.name);
         responseHandler.notFound(response);
         return;
       }
-      const folderId = albumAggre[0].folderId;
 
-      if (action === FolderAction.Rename) {
+      const folderId = albumAggre.folderId;
+
+      if (action === ItemAction.Rename) {
         await Album.updateOne(
           {
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -193,8 +193,8 @@ export const updateFile = setFunctionName(
             arrayFilters: [{ "file._id": toObjectId(fileId) }]
           }
         );
-      } else if (action === FolderAction.Delete) {
-        const storeName = albumAggre[0].file.storeName;
+      } else if (action === ItemAction.Delete) {
+        const storeName = albumAggre.file.storeName;
         await Album.updateOne(
           {
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion

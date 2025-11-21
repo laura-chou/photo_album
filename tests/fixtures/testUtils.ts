@@ -98,7 +98,11 @@ export const spyOnGetUserIdFromToken = (data: string | null = MOCK_USER_INFO._id
   jest.spyOn(jwtCore, "getUserIdFromToken").mockReturnValue(data);
 };
 
-export const spyOnGetAlbum = (): void => {
+export const spyOnGetAlbum = (error: boolean = false): void => {
+  if (error) {
+    jest.spyOn(AlbumController, "getAlbum").mockRejectedValue(new Error("getAlbum error"));
+    return;
+  }
   jest.spyOn(AlbumController, "getAlbum").mockResolvedValue(MOCK_ALBUM);
 };
 

@@ -97,11 +97,13 @@ export const describeParamsIdValidationTest = (
     tokenInfo?: Partial<TokenOptions>
   ) => Promise<request.Response>,
   expectResponseFn: typeof expectResponse,
-  title = "Validation Parameter Id"
+  title = "Validation Parameter Id",
+  mockUserIdFromToken: boolean = false,
 ): void => {
   describe(title, () => {
     test("should return 400 if Id format is invalid", async() => {
       mockUserFindById();
+      if (mockUserIdFromToken) spyOnGetUserIdFromToken();
 
       const response = await requestFn(
         route,

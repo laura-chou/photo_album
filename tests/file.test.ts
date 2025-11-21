@@ -5,13 +5,13 @@ import express, { Response } from "express";
 import { v4 as uuidv4 } from "uuid";
 
 import { HTTP_STATUS, RESPONSE_MESSAGE } from "../src/common/constants";
-import * as fileUpload from "../src/core/file-upload";
+import * as FileUpload from "../src/core/file-upload";
 import Album from "../src/models/album.model";
 import User from "../src/models/user.model";
 
 import { MOCK_EXPECTED_ALBUM } from "./fixtures/albumTestConfig";
-import { ROUTE } from "./fixtures/fileTestConfig";
-import { describeAuthErrorTests, describeTokenUserIdValidationTest, describeServerErrorTests } from "./fixtures/testStructures";
+import { MOCK_ALBUMAGGRE, MOCK_DELETE_DATA, MOCK_UPDATE_DATA, ROUTE } from "./fixtures/fileTestConfig";
+import { describeAuthErrorTests, describeTokenUserIdValidationTest, describeServerErrorTests, describeParamsIdValidationTest, describeReqBodyValidationTests } from "./fixtures/testStructures";
 import { createRequest, expectResponse, mockUserFindById, spyOnGetAlbum, spyOnGetUserIdFromToken } from "./fixtures/testUtils";
 import { MOCK_USER_INFO } from "./fixtures/userTestConfig";
 
@@ -37,6 +37,22 @@ const spyOnSendFile = (): void => {
     this.type("html");
     this.send(filePath);
   });
+};
+
+const mockUuid = (): void => {
+  (uuidv4 as jest.Mock).mockReturnValue("unique-file-identifier");
+};
+
+const mockAlbumAggre = (data: object = [MOCK_ALBUMAGGRE]): void => {
+  (Album.aggregate as jest.Mock).mockResolvedValue(data);
+};
+
+const spyOnUploadToFTP = (error: boolean = false): void => {
+  if (error) {
+    jest.spyOn(FileUpload, "uploadToFTP").mockRejectedValue(new Error("uploadToFTP error"));
+    return;
+  }
+  jest.spyOn(FileUpload, "uploadToFTP").mockResolvedValue();
 };
 
 describe("File API", () => {
@@ -155,7 +171,7 @@ describe("File API", () => {
       test("should return 404 when folder not found", async() => {
         mockUserFindById();
         spyOnGetUserIdFromToken();
-        (Album.aggregate as jest.Mock).mockResolvedValue([]);
+        mockAlbumAggre([]);
 
         const response = await createRequest.formDataPost(
           ROUTE.UPLOAD,
@@ -210,8 +226,8 @@ describe("File API", () => {
       });
 
       test("should return 400 if total files exceed 5", async() => {
-        (Album.aggregate as jest.Mock).mockResolvedValue([{ fileCount: 5 }]);
-      
+        mockAlbumAggre([{ fileCount: 5 }]);
+
         const response = await createRequest.formDataPost(
           ROUTE.UPLOAD,
           HTTP_STATUS.BAD_REQUEST
@@ -231,9 +247,9 @@ describe("File API", () => {
       test("should upload files successfully", async() => {
         mockUserFindById();
         spyOnGetUserIdFromToken();
-        (Album.aggregate as jest.Mock).mockResolvedValue([{ fileCount: 1 }]);
-        (uuidv4 as jest.Mock).mockReturnValueOnce("uuid1");
-        jest.spyOn(fileUpload, "uploadToFTP").mockResolvedValue();
+        mockAlbumAggre([{ fileCount: 1 }]);
+        mockUuid();
+        spyOnUploadToFTP();
         spyOnGetAlbum();
 
         const response = await createRequest.formDataPost(
@@ -268,9 +284,9 @@ describe("File API", () => {
             setupMocks: (): void => {
               mockUserFindById();
               spyOnGetUserIdFromToken();
-              (Album.aggregate as jest.Mock).mockResolvedValue([{ fileCount: 1 }]);
-              (uuidv4 as jest.Mock).mockReturnValueOnce("uuid1");
-              jest.spyOn(fileUpload, "uploadToFTP").mockRejectedValueOnce(new Error("upload fail"));
+              mockAlbumAggre([{ fileCount: 1 }]);
+              mockUuid();
+              spyOnUploadToFTP(true);
             }
           },
           {
@@ -279,14 +295,164 @@ describe("File API", () => {
             setupMocks: (): void => {
               mockUserFindById();
               spyOnGetUserIdFromToken();
-              (Album.aggregate as jest.Mock).mockResolvedValue([{ fileCount: 1 }]);
-              (uuidv4 as jest.Mock).mockReturnValueOnce("uuid1");
-              jest.spyOn(fileUpload, "uploadToFTP").mockResolvedValue();
+              mockAlbumAggre([{ fileCount: 1 }]);
+              mockUuid();
+              spyOnUploadToFTP();
             }
           }
         ]
       },
       expectResponse
+    );
+  });
+
+  describe(`PATCH ${ROUTE.FILE}/:fileId`, () => {
+    const route = `${ROUTE.FILE}/507f1f77bcf86cd799439013`;
+
+    describeAuthErrorTests(
+      route,
+      (route, status, tokenInfo) => createRequest.patch(route, MOCK_UPDATE_DATA, status, tokenInfo),
+      expectResponse
+    );
+
+    describeParamsIdValidationTest(
+      `${ROUTE.FILE}/invalid-id`,
+      (route, status, tokenInfo) => createRequest.patch(route, MOCK_UPDATE_DATA, status, tokenInfo),
+      expectResponse,
+      "Validation Parameter Id",
+      true
+    );
+
+    describeReqBodyValidationTests(
+      {
+        route: route,
+        validBody: MOCK_UPDATE_DATA,
+        requestFn: createRequest.patch,
+      },
+      expectResponse
+    );
+
+    describeTokenUserIdValidationTest(
+      route,
+      (route, status, tokenInfo) => createRequest.patch(route, MOCK_UPDATE_DATA, status, tokenInfo),
+      expectResponse
+    );
+
+    describe("Not Found Cases", () => {
+      test("should return 404 when folder not found", async() => {
+        mockUserFindById();
+        spyOnGetUserIdFromToken();
+        mockAlbumAggre([]);
+
+        const response = await createRequest.patch(
+          route,
+          MOCK_UPDATE_DATA,
+          HTTP_STATUS.NOT_FOUND);
+        expectResponse.notFound(response, []);
+      });
+    });
+
+    describe("Success Cases", () => {
+      beforeEach(() => {
+        mockUserFindById();
+        spyOnGetUserIdFromToken();
+        mockAlbumAggre();
+        spyOnGetAlbum();
+      });
+
+      test("should rename file name when action is 'rename'", async() => {
+        const response = await createRequest.patch(
+          route,
+          MOCK_UPDATE_DATA,
+          HTTP_STATUS.OK
+        );
+
+        expectResponse.success(response, MOCK_EXPECTED_ALBUM);
+      });
+
+      test("should delete file when action is 'delete'", async() => {
+        const response = await createRequest.patch(
+          route,
+          MOCK_DELETE_DATA,
+          HTTP_STATUS.OK
+        );
+
+        expectResponse.success(response, MOCK_EXPECTED_ALBUM);
+      });
+    });
+
+    describeServerErrorTests(
+      {
+        route: route,
+        requestFn: createRequest.patch,
+        requestBody: MOCK_UPDATE_DATA,
+        dbErrorCases: [
+          {
+            name: "User.findById",
+            mockFn: User.findById as jest.Mock
+          },
+          {
+            name: "Album.aggregate",
+            mockFn: Album.aggregate as jest.Mock,
+            setupMocks: (): void => {
+              mockUserFindById();
+              spyOnGetUserIdFromToken();
+            }
+          },
+          {
+            name: "Album.updateOne",
+            mockFn: Album.updateOne as jest.Mock,
+            setupMocks: (): void => {
+              mockUserFindById();
+              spyOnGetUserIdFromToken();
+              mockAlbumAggre();
+            }
+          },
+          {
+            name: "getAlbum",
+            mockFn: jest.fn(),
+            setupMocks: (): void => {
+              mockUserFindById();
+              spyOnGetUserIdFromToken();
+              mockAlbumAggre();
+              spyOnGetAlbum(true);
+            }
+          }
+        ]
+      },
+      expectResponse,
+      "Action Rename Server Error Cases"
+    );
+
+    describeServerErrorTests(
+      {
+        route: route,
+        requestFn: createRequest.patch,
+        requestBody: MOCK_DELETE_DATA,
+        dbErrorCases: [
+          {
+            name: "Album.updateOne",
+            mockFn: Album.updateOne as jest.Mock,
+            setupMocks: (): void => {
+              mockUserFindById();
+              spyOnGetUserIdFromToken();
+              mockAlbumAggre();
+            }
+          },
+          {
+            name: "deleteFromFTP",
+            mockFn: jest.fn(),
+            setupMocks: (): void => {
+              mockUserFindById();
+              spyOnGetUserIdFromToken();
+              mockAlbumAggre();
+              jest.spyOn(FileUpload, "deleteFromFTP").mockRejectedValue(new Error("deleteFromFTP error"));
+            }
+          }
+        ]
+      },
+      expectResponse,
+      "Action Delete Server Error Cases"
     );
   });
 });

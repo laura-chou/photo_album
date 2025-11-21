@@ -1,5 +1,5 @@
 import { HTTP_STATUS } from "../src/common/constants";
-import * as AlbumController from "../src/controllers/album.controller";
+import * as FileUpload from "../src/core/file-upload";
 import Album from "../src/models/album.model";
 import User from "../src/models/user.model";
 
@@ -69,7 +69,7 @@ describe("Album API", () => {
       (route, status, tokenInfo) => createRequest.patch(route, MOCK_UPDATE_DATA, status, tokenInfo),
       expectResponse
     );
-    
+
     describe("Success Cases", () => {
       beforeEach(() => {
         mockUserFindById();
@@ -162,13 +162,13 @@ describe("Album API", () => {
             }
           },
           {
-            name: "Album.findOne",
-            mockFn: Album.findOne as jest.Mock,
+            name: "getAlbum",
+            mockFn: jest.fn(),
             setupMocks: (): void => {
               mockUserFindById();
               spyOnGetUserIdFromToken();
               mockAlbumFindOne(null);
-              jest.spyOn(AlbumController, "getAlbum").mockRejectedValue(new Error("DB error"));
+              spyOnGetAlbum(true);
             }
           }
         ]
@@ -184,24 +184,11 @@ describe("Album API", () => {
         requestBody: MOCK_UPDATE_DATA,
         dbErrorCases: [
           {
-            name: "User.findById",
-            mockFn: User.findById as jest.Mock
-          },
-          {
             name: "Album.updateOne",
             mockFn: Album.updateOne as jest.Mock,
             setupMocks: (): void => {
               mockUserFindById();
               spyOnGetUserIdFromToken();
-            }
-          },
-          {
-            name: "Album.findOne",
-            mockFn: Album.findOne as jest.Mock,
-            setupMocks: (): void => {
-              mockUserFindById();
-              spyOnGetUserIdFromToken();
-              jest.spyOn(AlbumController, "getAlbum").mockRejectedValue(new Error("DB error"));
             }
           }
         ]
@@ -217,10 +204,6 @@ describe("Album API", () => {
         requestBody: MOCK_DELETE_FOLDER_DATA,
         dbErrorCases: [
           {
-            name: "User.findById",
-            mockFn: User.findById as jest.Mock
-          },
-          {
             name: "Album.updateOne",
             mockFn: Album.updateOne as jest.Mock,
             setupMocks: (): void => {
@@ -229,12 +212,13 @@ describe("Album API", () => {
             }
           },
           {
-            name: "Album.findOne",
-            mockFn: Album.findOne as jest.Mock,
+            name: "deleteFromFTP",
+            mockFn: jest.fn(),
             setupMocks: (): void => {
               mockUserFindById();
               spyOnGetUserIdFromToken();
-              jest.spyOn(AlbumController, "getAlbum").mockRejectedValue(new Error("DB error"));
+              mockAlbumFindOne(null);
+              jest.spyOn(FileUpload, "deleteFromFTP").mockRejectedValue(new Error("deleteFromFTP error"));
             }
           }
         ]
