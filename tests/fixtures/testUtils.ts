@@ -5,6 +5,7 @@ import request, { Response, Request } from "supertest";
 
 import app from "../../src/app";
 import { CONTENT_TYPE, HTTP_STATUS, RESPONSE_MESSAGE } from "../../src/common/constants";
+import { BADREQUEST_MESSAGE_MAP, BadRequestType, UNAUTHORIZED_MESSAGE_MAP, UnAuthorizedType } from "../../src/common/response";
 import { isNullOrEmpty, isTypeString } from "../../src/common/utils";
 import * as AlbumController from "../../src/controllers/album.controller";
 import * as jwtCore from "../../src/core/jwt";
@@ -42,28 +43,6 @@ const defaultFormDataSetOptions: Required<FormDataSetOptions> = {
   isSetFolderId: true,
   invalidFolderId: false
 };
-
-const BADREQUEST_MESSAGE_MAP = {
-  CONTENT_TYPE: RESPONSE_MESSAGE.INVALID_CONTENT_TYPE,
-  JSON_KEY: RESPONSE_MESSAGE.INVALID_JSON_KEY,
-  JSON_FORMAT: RESPONSE_MESSAGE.INVALID_JSON_FORMAT,
-  INVALID_ID: RESPONSE_MESSAGE.INVALID_ID,
-  INVALID_CAPTCHA: RESPONSE_MESSAGE.INVALID_CAPTCHA,
-  EXPIRED_CAPTCHA: RESPONSE_MESSAGE.EXPIRED_CAPTCHA,
-  FILE_LIMIT: RESPONSE_MESSAGE.FILE_LIMIT,
-  FOLDER_LIMIT: RESPONSE_MESSAGE.FOLDER_LIMIT,
-  NO_FILE: RESPONSE_MESSAGE.NO_FILE,
-  LIMIT_FORMAT: RESPONSE_MESSAGE.LIMIT_FORMAT,
-} as const;
-
-const UNAUTHORIZED_MESSAGE_MAP = {
-  TOKEN_INVALID: RESPONSE_MESSAGE.TOKEN_INVALID,
-  WRONG_PASSWORD: RESPONSE_MESSAGE.WRONG_PASSWORD
-} as const;
-
-
-export type BadRequestType = keyof typeof BADREQUEST_MESSAGE_MAP;
-export type UnAuthorizedType = keyof typeof UNAUTHORIZED_MESSAGE_MAP;
 
 const attachTokenCookie = (req: Request, options: TokenOptions): void => {
   if (!options.showToken) return;

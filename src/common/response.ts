@@ -2,7 +2,7 @@ import { Response } from "express";
 
 import { HTTP_STATUS, RESPONSE_MESSAGE } from "./constants";
 
-const BADREQUEST_MESSAGE_MAP = {
+export const BADREQUEST_MESSAGE_MAP = {
   CONTENT_TYPE: RESPONSE_MESSAGE.INVALID_CONTENT_TYPE,
   JSON_KEY: RESPONSE_MESSAGE.INVALID_JSON_KEY,
   JSON_FORMAT: RESPONSE_MESSAGE.INVALID_JSON_FORMAT,
@@ -15,13 +15,13 @@ const BADREQUEST_MESSAGE_MAP = {
   LIMIT_FORMAT: RESPONSE_MESSAGE.LIMIT_FORMAT,
 } as const;
 
-const UNAUTHORIZED_MESSAGE_MAP = {
+export const UNAUTHORIZED_MESSAGE_MAP = {
   TOKEN_INVALID: RESPONSE_MESSAGE.TOKEN_INVALID,
   WRONG_PASSWORD: RESPONSE_MESSAGE.WRONG_PASSWORD
 } as const;
 
-type BadRequestType = keyof typeof BADREQUEST_MESSAGE_MAP;
-type UnAuthorizedType = keyof typeof UNAUTHORIZED_MESSAGE_MAP;
+export type BadRequestType = keyof typeof BADREQUEST_MESSAGE_MAP;
+export type UnAuthorizedType = keyof typeof UNAUTHORIZED_MESSAGE_MAP;
 
 interface ApiResponse<T> {
   status: number
