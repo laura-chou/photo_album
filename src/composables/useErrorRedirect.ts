@@ -31,13 +31,12 @@ export const useErrorRedirect = () => {
           if (data) userStore.captcha = data;
           break;
         case 401:
-          console.log(error.response);
           if (type === "WRONG_PASSWORD") {
             errorStore.message = "帳號或密碼錯誤";
             redirect = false;
           } else {
             errorStore.message = "登入已過期，請重新登入";
-            pushPath = "/";
+            pushPath = "/logout";
           }
           break;
         case 409:
@@ -61,7 +60,7 @@ export const useErrorRedirect = () => {
 
     if (redirect) {
       setTimeout(() => {
-        router.push(`.${pushPath}`);
+        router.push(pushPath);
       }, 3000);
     }
   };

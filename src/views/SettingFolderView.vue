@@ -115,15 +115,17 @@ const closeModal = () => {
       <div v-if="albumStore.isFolderLimitExceeded" class="alert alert-danger text-center">
         已達新增上限 (最多 5 個資料夾)
       </div>
-      <button
-        v-else
-        type="button"
-        class="btn btn-primary btn-custom mb-3"
-        data-bs-toggle="modal"
-        data-bs-target="#folderModal"
-      >
-        <VueFeather type="folder-plus"></VueFeather>
-      </button>
+      <div v-else class="text-end">
+        <button
+          type="button"
+          class="btn btn-primary btn-custom mb-3"
+          data-bs-toggle="modal"
+          data-bs-target="#folderModal"
+        >
+          <VueFeather type="folder-plus"></VueFeather>
+        </button>
+      </div>
+
       <div
         class="modal fade"
         id="folderModal"
@@ -134,7 +136,7 @@ const closeModal = () => {
       >
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content">
-            <div class="modal-body">
+            <div class="modal-body text-end">
               <button
                 type="button"
                 class="btn-close"

@@ -2,38 +2,22 @@
 import { onMounted } from "vue";
 import { useRouter } from "vue-router";
 
-import { useAlert } from "@/composables/useAlert";
-import { useErrorRedirect } from "@/composables/useErrorRedirect";
-import { useErrorStore } from "@/stores/error-store";
 import { useUserStore } from "@/stores/user-store";
 
-const { alerts, triggerAlert } = useAlert();
-const { handleError } = useErrorRedirect();
 const router = useRouter();
 const userSore = useUserStore();
-const errorStore = useErrorStore();
 
 onMounted(async () => {
   try {
     await userSore.logout();
+  } finally {
     setTimeout(() => {
-      router.push("./");
+      router.push("/");
     }, 1000);
-  } catch (error) {
-    handleError(error, "logout");
-    if (errorStore.message !== "") {
-      triggerAlert(errorStore.message);
-    }
   }
 });
 </script>
 
 <template>
-  <AlertComponent
-    v-for="alert in alerts"
-    :key="alert.id"
-    :message="alert.message"
-    :type="alert.type"
-  />
   <LoadingComponent />
 </template>

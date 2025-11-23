@@ -150,7 +150,7 @@ const openGallery = (url: string) => {
         <div
           class="progress-bar progress-bar-striped progress-bar-animated"
           role="progressbar"
-          :aria-valuenow="albumStore.uploadProgress"
+          :style="`width: ${albumStore.uploadProgress}%`"
           aria-valuemin="0"
           aria-valuemax="100"
         >

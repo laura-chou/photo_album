@@ -3,26 +3,20 @@ import axios from "axios";
 import errorImage from "@/assets/error-image.png";
 import type { Folder, FileItem } from "@/types/album-types";
 
+axios.defaults.withCredentials = true;
+
 const fileDomain = `${import.meta.env.VITE_APIURL}/file`;
-const isProduction = Number(import.meta.env.VITE_PRD_ENV) === 1;
 
 export const useFolderProcess = () => {
-  const getImageSrc = async (fileName: string): Promise<string> => {
+  const getImageSrc = async (folderId: string, fileName: string): Promise<string> => {
     try {
-      const url = `${fileDomain}/${fileName}`;
-      if (isProduction) {
-        const result = await axios.get(url, {
-          withCredentials: true,
-        });
-        return result.data;
-      } else {
-        const result = await axios.get(url, {
-          withCredentials: true,
-          responseType: "blob",
-        });
+      const url = `${fileDomain}/${folderId}/${fileName}`;
 
-        return URL.createObjectURL(result.data);
-      }
+      const result = await axios.get(url, {
+        responseType: "blob",
+      });
+
+      return URL.createObjectURL(result.data);
     } catch (error) {
       console.log(error);
       return errorImage;
@@ -32,7 +26,7 @@ export const useFolderProcess = () => {
   const processFolderFiles = async (folder: Folder): Promise<Folder> => {
     const processedFiles: FileItem[] = await Promise.all(
       folder.files.map(async (file) => {
-        const imageUrl = await getImageSrc(file.storeName);
+        const imageUrl = await getImageSrc(folder._id, file.storeName);
         return {
           ...file,
           imageUrl,
