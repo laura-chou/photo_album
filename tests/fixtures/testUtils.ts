@@ -61,6 +61,7 @@ const UNAUTHORIZED_MESSAGE_MAP = {
   WRONG_PASSWORD: RESPONSE_MESSAGE.WRONG_PASSWORD
 } as const;
 
+
 export type BadRequestType = keyof typeof BADREQUEST_MESSAGE_MAP;
 export type UnAuthorizedType = keyof typeof UNAUTHORIZED_MESSAGE_MAP;
 
@@ -111,7 +112,8 @@ export const createRequest = {
     route: string,
     status: number,
     TokenOptions?: Partial<TokenOptions>,
-    isExpectJson: boolean = true
+    isExpectJson: boolean = true,
+    ignoreExpectContentType: boolean = false
   ): request.Test => {
     const mergedTokenOptions = { ...defaultTokenOptions, ...TokenOptions };
     const expectContentType = isExpectJson ? CONTENT_TYPE.JSON_WITH_CHARSET : CONTENT_TYPE.TEXT_WITH_CHARSET;
@@ -119,9 +121,11 @@ export const createRequest = {
 
     attachTokenCookie(req, mergedTokenOptions);
 
-    return req
-      .expect("Content-Type", expectContentType)
-      .expect(status);
+    if (!ignoreExpectContentType) {
+      req.expect("Content-Type", expectContentType);
+    }
+
+    return req.expect(status);
   },
 
   post: (

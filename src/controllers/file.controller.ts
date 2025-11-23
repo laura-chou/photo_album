@@ -1,6 +1,7 @@
 import fs from "fs/promises";
 import path from "path";
 
+import { Client } from "basic-ftp";
 import { Request, Response } from "express";
 import { v4 as uuidv4 } from "uuid";
 
@@ -8,7 +9,7 @@ import { HTTP_STATUS, RESPONSE_MESSAGE } from "../common/constants";
 import { responseHandler } from "../common/response";
 import { convertToBool, getNowDate, setFunctionName } from "../common/utils";
 import { getFilePipeline, getFilesCountPipeline, toObjectId } from "../core/db";
-import { deleteFromFTP, uploadToFTP } from "../core/file-upload";
+import { connectFtpClient, deleteFromFTP, uploadToFTP } from "../core/file-upload";
 import { getUserIdFromToken } from "../core/jwt";
 import { LogLevel, LogMessage, setLog } from "../core/logger";
 import Album, { Files } from "../models/album.model";
@@ -18,6 +19,7 @@ import * as baseController from "./base.controller";
 
 export const readPhoto = setFunctionName(
   async(request: Request, response: Response): Promise<void> => {
+    const folderId = request.params.folderId;
     const fileName = request.params.fileName;
 
     const userId = getUserIdFromToken(request);
@@ -25,9 +27,10 @@ export const readPhoto = setFunctionName(
       return;
     }
 
+    const filePath = `photo-album/${userId}/${folderId}/${fileName}`;
+
     if (!convertToBool(process.env.PRD_ENV)) {
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const localPath = path.join(process.cwd(), "photo-album", userId!, fileName);
+      const localPath = path.join(process.cwd(), filePath);
       try {
         await fs.access(localPath);
         setLog(LogLevel.INFO, LogMessage.SUCCESS, readPhoto.name);
@@ -41,11 +44,19 @@ export const readPhoto = setFunctionName(
       }
     }
 
-    const ftpUrl = `http://${process.env.FTP_HOST}/${process.env.FTP_USER}/photo-album/${userId}/${fileName}`;
-    response.status(HTTP_STATUS.FOUND)
-      .location(ftpUrl)
-      .type("html")
-      .send(`<p>Redirecting to <a href="${ftpUrl}">${ftpUrl}</a></p>`);
+    const client = new Client();
+    try {
+      await connectFtpClient(client);
+      const ext = fileName.split(".").pop();
+      response.setHeader("Content-Type", `image/${ext}`);
+      await client.downloadTo(response, filePath);
+    }
+    catch (error) {
+      baseController.errorHandler(response, error, readPhoto.name);
+    }
+    finally {
+      client.close();
+    }
   },
   "readPhoto"
 );
@@ -104,7 +115,8 @@ export const uploadPhoto = setFunctionName(
       const newFiles: Files[] = [];
       for (const file of files) {
         const ext = file.originalname.split(".").pop();
-        const filename = `${uuidv4()}.${ext}`;
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        const filename = `${uuidv4()}.${ext!.toLowerCase()}`;
         newFiles.push(
           {
             customName: file.originalname.split(".").join("."),
@@ -114,7 +126,7 @@ export const uploadPhoto = setFunctionName(
         );
 
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        await uploadToFTP(file.buffer, userId!, filename);
+        await uploadToFTP(file.buffer, userId!, folderId, filename);
       }
 
       await Album.updateOne(
@@ -174,7 +186,7 @@ export const updateFile = setFunctionName(
         return;
       }
 
-      const folderId = albumAggre.folderId;
+      const folderId = albumAggre.folderId.toString();
 
       if (action === ItemAction.Rename) {
         await Album.updateOne(
@@ -205,7 +217,7 @@ export const updateFile = setFunctionName(
           { $pull: { "folder.$.files": { _id: toObjectId(fileId) } } }
         );
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        await deleteFromFTP(userId!, storeName);
+        await deleteFromFTP(userId!, folderId, storeName);
       }
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const userAlbum = await getAlbum(userId!);

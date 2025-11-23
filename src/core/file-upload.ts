@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import { Readable } from "stream";
 
-import { Client } from "basic-ftp";
+import { Client, enterPassiveModeIPv4 } from "basic-ftp";
 import { Request } from "express";
 import multer, { FileFilterCallback } from "multer";
 
@@ -12,42 +12,63 @@ import { LogLevel, LogMessage, setLog } from "./logger";
 
 const defaultPath = "photo-album";
 
+export const connectFtpClient = async(client: Client): Promise<void> => {
+  await client.access({
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    host: process.env.FTP_HOST!,
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    user: process.env.FTP_USER!,
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    password: process.env.FTP_PASSWORD!,
+    secure: false
+  });
+  client.prepareTransfer = enterPassiveModeIPv4;
+};
+
+const isFtpNotFound = (error: unknown): boolean => {
+  if (typeof error === "object" && error !== null) {
+    const err = error as { code?: number; message?: string };
+
+    return (
+      err.code === 550 ||
+      Boolean(err.message?.toLowerCase().includes("no such file")) ||
+      Boolean(err.message?.toLowerCase().includes("not found"))
+    );
+  }
+
+  return false;
+};
+
 export const uploadToFTP = async(
   buffer: Buffer,
   userId: string,
-  filename: string
+  folderId: string,
+  fileName: string
 ): Promise<void> => {
-  const client = new Client();
   const functionName = "uploadToFTP";
 
   if (!convertToBool(process.env.PRD_ENV)) {
-    const fullPath = path.join(defaultPath, userId);
+    const fullPath = path.join(defaultPath, userId, folderId);
     if (!fs.existsSync(fullPath)) {
       fs.mkdirSync(fullPath, { recursive: true });
     }
 
-    const filePath = path.join(fullPath, filename);
+    const filePath = path.join(fullPath, fileName);
     await fs.promises.writeFile(filePath, buffer);
     return;
   }
 
+  const client = new Client();
   try {
-    await client.access({
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      host: process.env.FTP_HOST!,
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      user: process.env.FTP_USER!,
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      password: process.env.FTP_USER!,
-      secure: false
-    });
+    await connectFtpClient(client);
 
-    const remoteFolder = `${defaultPath}/${userId}/`;
+    const remoteFolder = `/${defaultPath}/${userId}/${folderId}`;
+
     await client.ensureDir(remoteFolder);
     await client.cd(remoteFolder);
 
     const stream = Readable.from(buffer);
-    await client.uploadFrom(stream, filename);
+    await client.uploadFrom(stream, fileName);
     setLog(LogLevel.INFO, LogMessage.SUCCESS, functionName);
   } catch (error) {
     const message = `${LogMessage.ERROR.FTPFAIL}\n${error}`;
@@ -60,15 +81,15 @@ export const uploadToFTP = async(
 
 export const deleteFromFTP = async(
   userId: string,
-  filename?: string
+  folderId: string,
+  fileName?: string
 ): Promise<void> => {
-  const client = new Client();
   const functionName = "deleteFromFTP";
 
   if (!convertToBool(process.env.PRD_ENV)) {
-    const targetPath = filename
-      ? path.join(defaultPath, userId, filename)
-      : path.join(defaultPath, userId);
+    const targetPath = fileName
+      ? path.join(defaultPath, userId, folderId, fileName)
+      : path.join(defaultPath, userId, folderId);
 
     try {
       await fs.promises.rm(targetPath, { recursive: true, force: true });
@@ -82,31 +103,31 @@ export const deleteFromFTP = async(
     return;
   }
 
+  const client = new Client();
+
   try {
-    await client.access({
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      host: process.env.FTP_HOST!,
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      user: process.env.FTP_USER!,
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      password: process.env.FTP_USER!,
-      secure: false,
-    });
+    await connectFtpClient(client);
 
-    const remoteBase = `${defaultPath}/${userId}`;
+    const remoteBase = `/${defaultPath}/${userId}/${folderId}`;
 
-    if (filename) {
-      const remoteFilePath = `${remoteBase}/${filename}`;
+    if (fileName) {
+      const remoteFilePath = `${remoteBase}/${fileName}`;
       await client.remove(remoteFilePath);
       setLog(LogLevel.INFO, `FTP file delete success: ${remoteFilePath}`, functionName);
     } else {
+      await client.list(remoteBase);
       await client.removeDir(remoteBase);
       setLog(LogLevel.INFO, `FTP folder delete success: ${remoteBase}`, functionName);
     }
   } catch (error) {
-    const message = `${LogMessage.ERROR.FTPFAIL}\n${error}`;
-    setLog(LogLevel.ERROR, message, functionName);
-    throw error;
+    if (isFtpNotFound(error)) {
+      const message = `FTP does not exist path, user: ${userId}, folder: ${folderId}`;
+      setLog(LogLevel.WARN, message, functionName);
+    } else {
+      const message = `${LogMessage.ERROR.FTPFAIL}\n${error}`;
+      setLog(LogLevel.ERROR, message, functionName);
+      throw error;
+    }
   } finally {
     client.close();
   }

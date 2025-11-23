@@ -1,6 +1,7 @@
 import fsPromises from "fs/promises";
 import path from "path";
 
+import { Client } from "basic-ftp";
 import express, { Response } from "express";
 import { v4 as uuidv4 } from "uuid";
 
@@ -16,7 +17,7 @@ import { createRequest, expectResponse, mockUserFindById, spyOnGetAlbum, spyOnGe
 import { MOCK_USER_INFO } from "./fixtures/userTestConfig";
 
 jest.mock("fs/promises");
-
+jest.mock("basic-ftp");
 jest.mock("uuid");
 
 jest.mock("../src/models/user.model", () => ({
@@ -30,6 +31,8 @@ jest.mock("../src/models/album.model", () => ({
   aggregate: jest.fn(),
   updateOne: jest.fn()
 }));
+
+const mockBuffer = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
 
 const spyOnSendFile = (): void => {
   jest.spyOn(express.response, "sendFile").mockImplementation(function(this: Response, filePath: string) {
@@ -63,8 +66,8 @@ describe("File API", () => {
     process.env.FTP_USER = "ftp-user";
   });
 
-  describe(`GET ${ROUTE.FILE}/:fileName`, () => {
-    const route = `${ROUTE.FILE}/photo.jpg`;
+  describe(`GET ${ROUTE.FILE}/:folderId/:fileName`, () => {
+    const route = `${ROUTE.FILE}/${MOCK_ALBUMAGGRE.folderId}/${MOCK_ALBUMAGGRE.file.storeName}`;
 
     describeAuthErrorTests(
       route,
@@ -96,21 +99,32 @@ describe("File API", () => {
           false
         );
 
-        const expectedPath = path.join(process.cwd(), "photo-album", MOCK_USER_INFO._id, "photo.jpg");
+        const filePath = `${MOCK_USER_INFO._id}/${MOCK_ALBUMAGGRE.folderId}/${MOCK_ALBUMAGGRE.file.storeName}`;
+        const expectedPath = path.join(process.cwd(), "photo-album", filePath);
         expect(fsPromises.access).toHaveBeenCalledWith(expectedPath);
       });
 
       test("should redirect to FTP URL if PRD_ENV is true", async() => {
         process.env.PRD_ENV = "true";
+        const downloadToMock = jest.fn().mockImplementation(res => {
+          res.write(mockBuffer);
+          res.end();
+        });
 
+        (Client as jest.Mock).mockImplementation(() => ({
+          access: jest.fn(),
+          downloadTo: downloadToMock,
+          close: jest.fn(),
+        }));
         const response = await createRequest.get(
           route,
-          HTTP_STATUS.FOUND,
+          HTTP_STATUS.OK,
           {},
-          false
+          false,
+          true
         );
-        const expectedPath = `http://ftp.example.com/ftp-user/photo-album/${MOCK_USER_INFO._id}/photo.jpg`;
-        expect(response.headers.location).toBe(expectedPath);
+        expect(response.headers["content-type"]).toBe("image/jpg");
+        expect(response.body.slice(0, 4)).toEqual(mockBuffer);
       });
     });
 

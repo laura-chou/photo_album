@@ -70,6 +70,22 @@ describe("Album API", () => {
       expectResponse
     );
 
+    describe("Validation Error Cases", () => {
+      test("should return 400 if total folder exceed 5", async() => {
+        mockUserFindById();
+        spyOnGetUserIdFromToken();
+        mockAlbumFindOne({ folder: [{}, {}, {}, {}, {}] });
+
+        const response = await createRequest.patch(
+          route,
+          MOCK_CREATE_DATA,
+          HTTP_STATUS.BAD_REQUEST
+        );
+
+        expectResponse.badRequest(response, "FOLDER_LIMIT");
+      });
+    });
+
     describe("Success Cases", () => {
       beforeEach(() => {
         mockUserFindById();

@@ -64,7 +64,7 @@ export const updateFolder = setFunctionName(
       if (action === ItemAction.Create) {
         const album = await Album.findOne({ userId });
         if (album) {
-          if (album.folder.length > 5) {
+          if (album.folder.length >= 5) {
             setLog(LogLevel.ERROR, RESPONSE_MESSAGE.FOLDER_LIMIT, updateFolder.name);
             responseHandler.badRequest(response, "FOLDER_LIMIT");
             return;
@@ -116,7 +116,8 @@ export const updateFolder = setFunctionName(
             }
           }
         );
-        await deleteFromFTP(folderId);
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        await deleteFromFTP(userId!, folderId);
       }
 
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
