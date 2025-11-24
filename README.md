@@ -1,48 +1,33 @@
-# photo_album
+# 線上相簿 Photo Album
 
-This template should help get you started developing with Vue 3 in Vite.
+### 🔑 登入前功能
 
-## Recommended IDE Setup
+- 使用者登入
+- 使用者註冊
+  - 驗證碼驗證
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+![](demo1.jpg)
 
-## Recommended Browser Setup
+### 👤 登入後功能
 
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd) 
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
+### 相簿
 
-## Type Support for `.vue` Imports in TS
+- 瀏覽圖檔
 
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
+![](demo2.jpg)
 
-## Customize configuration
+### 設定
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+- 新增/刪除/修改資料夾（最多 5 個）
+- 新增/刪除/修改圖檔（最多 5 張，單張大小限制 1MB）
+- 點擊圖檔可放大顯示
 
-## Project Setup
+![](demo3.jpg)
 
-```sh
-npm install
-```
+### 登出
 
-### Compile and Hot-Reload for Development
+- 使用者登出
 
-```sh
-npm run dev
-```
+### Demo
 
-### Type-Check, Compile and Minify for Production
-
-```sh
-npm run build
-```
-
-### Lint with [ESLint](https://eslint.org/)
-
-```sh
-npm run lint
-```
+https://laura-chou.github.io/photo_album/
