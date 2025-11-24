@@ -81,10 +81,11 @@ const createFolder = async () => {
 
   try {
     await albumStore.createFolder(createFolderName.value);
-    createFolderName.value = "";
-    closeModal();
   } catch (error) {
     handleError(error, "createFolder");
+  } finally {
+    createFolderName.value = "";
+    closeModal();
   }
 };
 

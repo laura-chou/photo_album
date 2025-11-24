@@ -60,7 +60,7 @@ export const useErrorRedirect = () => {
 
     if (redirect) {
       setTimeout(() => {
-        router.push(pushPath);
+        router.push(`.${pushPath}`);
       }, 3000);
     }
   };
