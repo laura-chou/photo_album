@@ -1,4 +1,4 @@
 # Photo Album API
 
-### Apiary
-#### https://photoalbumapi.docs.apiary.io/
+### Swagger
+#### https://app.swaggerhub.com/apis-docs/private-412/photo-album-api
