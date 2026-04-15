@@ -30,4 +30,4 @@
 
 ### Demo
 
-https://laura-chou.github.io/photo_album/
+https://laura-chou.github.io/photo-album/

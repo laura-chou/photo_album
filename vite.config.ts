@@ -4,7 +4,7 @@ import vue from "@vitejs/plugin-vue";
 import { defineConfig } from "vite";
 
 export default defineConfig({
-  base: "/photo_album/",
+  base: "/photo-album/",
   server: {
     host: "0.0.0.0",
   },
